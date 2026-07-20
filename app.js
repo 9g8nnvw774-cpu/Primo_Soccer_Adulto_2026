@@ -381,10 +381,10 @@ function renderRanking(){
   annualScores.forEach(s=>{per[s.athlete_id]=per[s.athlete_id]||Array(13).fill(0);per[s.athlete_id][s.month-1]+=s.points;});
   Object.keys(per).forEach(id=>per[id][12]=per[id].slice(0,12).reduce((a,b)=>a+b,0));
   const rows=Object.entries(per).sort((a,b)=>b[1][12]-a[1][12]);
-  document.getElementById("annualBody").innerHTML=rows.map(([id,v])=>`<tr><td style="text-align:left">${athleteDisplayId(id)} ${athleteName(id)}</td>${v.map(x=>`<td>${x}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="14">Sem pontuação em ${currentYear}.</td></tr>`;
+  document.getElementById("annualBody").innerHTML=rows.map(([id,v])=>`<tr><td style="text-align:left">${athleteName(id)}</td>${v.map(x=>`<td>${x}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="14">Sem pontuação em ${currentYear}.</td></tr>`;
 }
 function rankList(r){if(!r.length)return"<p class='smallText'>Sem pontuação neste mês ainda.</p>";
-  return r.map((x,i)=>`<div class="rankRow"><span class="rankLeft"><span class="rankPos">${i+1}º</span> ${avatarHtml(x.athlete_id)} ${athleteDisplayId(x.athlete_id)} ${athleteName(x.athlete_id)}</span><strong>${x.points} pts</strong></div>`).join("");
+  return r.map((x,i)=>`<div class="rankRow"><span class="rankLeft"><span class="rankPos">${i+1}º</span> ${avatarHtml(x.athlete_id)} <span class="aName">${athleteName(x.athlete_id)}</span></span><strong>${x.points} pts</strong></div>`).join("");
 }
 
 // ---------------- MATA-MATA ----------------

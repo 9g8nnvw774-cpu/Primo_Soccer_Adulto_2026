@@ -10,7 +10,7 @@ body{margin:0;background:#020817;color:#fff;font-family:Arial,Helvetica,sans-ser
 .heroSub{color:#7ee0ff;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:3px;text-shadow:0 0 16px rgba(126,224,255,.55)}
 .monthSelect{width:100%;max-width:360px;text-align:center;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-top:6px}
 
-select,input,button,textarea{min-height:46px;border-radius:12px;border:1px solid rgba(126,224,255,.45);background:#10233d;color:#fff;padding:10px 12px;font-size:15px;font-weight:700;font-family:inherit}
+select,input,button,textarea{min-height:46px;border-radius:12px;border:1px solid rgba(126,224,255,.45);background:#10233d;color:#fff;padding:10px 12px;font-size:16px;font-weight:700;font-family:inherit}
 select option{color:#111}
 button{border:0;background:#dbeafe;color:#071629;font-weight:900;cursor:pointer}
 .success{background:#8ff0b3!important}
@@ -25,8 +25,7 @@ button+button{margin-top:8px}
 .storyCanvas{width:100%;max-width:320px;display:block;margin:10px auto;border-radius:12px;border:1px solid rgba(126,224,255,.3)}
 .storyDownloadBtn{display:block;text-align:center;text-decoration:none;max-width:320px;margin:0 auto;padding:12px;border-radius:12px}
 
-.sync{text-align:center;padding:10px;font-weight:800;font-size:13px;color:#ffe082;background:rgba(0,0,0,.18);min-height:0}
-.sync:empty{padding:0}
+.sync{text-align:center;padding:6px 10px;font-weight:800;font-size:13px;color:#ffe082;background:rgba(0,0,0,.18);height:30px;line-height:18px;overflow:hidden}
 .sync.ok{color:#8ff0b3}
 .sync.error{color:#ff8585}
 
@@ -65,13 +64,15 @@ td.sticky{background:#061334!important}
 .slotTitle{background:#071c47;margin:-12px -12px 10px;padding:12px;border-radius:16px 16px 0 0;font-weight:900}
 
 .item,.rankRow{display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,255,255,.08);border-radius:10px;padding:9px;margin:6px 0}
-.rankLeft{display:flex;align-items:center;gap:8px;font-weight:800}
-.rankPos{color:#7ee0ff;font-weight:900;min-width:26px}
+.rankLeft{display:flex;align-items:center;gap:8px;font-weight:800;min-width:0;flex:1}
+.rankLeft .aName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rankRow strong{white-space:nowrap;flex-shrink:0}
+.rankPos{color:#7ee0ff;font-weight:900;min-width:26px;flex-shrink:0}
 
 .scoreTable td button{min-height:34px;min-width:34px;padding:0;font-size:16px}
 .scoreCounter{display:flex;align-items:center;gap:6px;justify-content:center}
 .scoreCounter span{min-width:24px;display:inline-block}
-.scoreInput{width:52px;min-height:34px;padding:4px;text-align:center;font-weight:900;font-size:15px}
+.scoreInput{width:54px;min-height:34px;padding:4px;text-align:center;font-weight:900;font-size:16px}
 .unBtn{min-width:44px;font-weight:900}
 .unBtn.v0{background:#ff8585!important}
 .unBtn.v5{background:#ffd479!important}
@@ -89,7 +90,7 @@ td.sticky{background:#061334!important}
 .teamBox{flex:1;text-align:center}
 .teamBox .bigAvatar{width:64px;height:64px;border-radius:50%;border:2px solid #8ff0b3;object-fit:cover;cursor:pointer;background:#061334}
 .teamBox .seed{color:#7ee0ff;font-weight:900;font-size:13px}
-.teamBox .tname{font-weight:900;font-size:13px;margin-top:4px;text-transform:uppercase}
+.teamBox .tname{font-weight:900;font-size:13px;margin-top:4px;text-transform:uppercase;line-height:1.1;word-break:break-word}
 .teamBox .tpts{color:#8ff0b3;font-size:12px;font-weight:700}
 .vsX{color:#8ff0b3;font-weight:900;font-size:20px}
 .teamBox.winner .tname{color:#8ff0b3}
