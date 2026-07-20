@@ -21,6 +21,8 @@ let scoreDraft = {}; // athleteId -> {wins,draws,losses}
 let pendingPhoto = null;
 
 const MONTH_NAMES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const FULL_MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+let scheduleSlots = [];
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -39,6 +41,9 @@ async function init() {
   sb = supabase.createClient(window.PRIMO_CONFIG.supabaseUrl, window.PRIMO_CONFIG.supabaseAnonKey);
   document.getElementById("heroLogo").src = window.PRIMO_CONFIG.logo;
   document.getElementById("heroTitle").textContent = window.PRIMO_CONFIG.appName;
+  document.getElementById("hero").style.backgroundImage =
+    `linear-gradient(180deg, rgba(6,17,122,.55), rgba(2,8,23,.92)), url('${window.PRIMO_CONFIG.cover}')`;
+  updateHeroSub();
 
   if (mode !== "admin") {
     document.getElementById("tabs").classList.add("hidden");
@@ -72,6 +77,10 @@ async function init() {
 
 // ---------------- NAV ----------------
 
+function updateHeroSub() {
+  document.getElementById("heroSub").textContent = "Mês: " + FULL_MONTH_NAMES[currentMonth - 1];
+}
+
 function showOnly(pageId) {
   document.querySelectorAll(".page").forEach(p => p.classList.add("hidden"));
   document.getElementById(pageId).classList.remove("hidden");
@@ -87,6 +96,7 @@ function showPage(name) {
   if (name === "matamata") renderBracket();
   if (name === "cadastro") renderAthletesTable();
   if (name === "imprimir") document.getElementById("storyPreviewCard").style.display = "none";
+  if (name === "config") renderSlotsList();
   if (name === "dashboard") renderDashboard();
 }
 
@@ -120,6 +130,8 @@ function wireEvents() {
   document.getElementById("btnStoryRanking").addEventListener("click", () => generateStoryImage("ranking"));
   document.getElementById("btnStoryAnual").addEventListener("click", () => generateStoryImage("anual"));
   document.getElementById("btnStoryBracket").addEventListener("click", () => generateStoryImage("matamata"));
+
+  document.getElementById("btnAddSlot").addEventListener("click", addScheduleSlot);
 }
 
 function refreshCategoryOptions() {
@@ -147,7 +159,7 @@ function buildMonthSelect() {
     MONTH_NAMES.forEach((m, i) => {
       const opt = document.createElement("option");
       opt.value = year + "-" + (i + 1);
-      opt.textContent = m + "/" + year;
+      opt.textContent = FULL_MONTH_NAMES[i] + "/" + year;
       if (year === currentYear && i + 1 === currentMonth) opt.selected = true;
       sel.appendChild(opt);
     });
@@ -158,6 +170,7 @@ async function onMonthChange(e) {
   const [y, m] = e.target.value.split("-").map(Number);
   currentYear = y; currentMonth = m;
   scoreDraft = {};
+  updateHeroSub();
   setSync("Carregando " + MONTH_NAMES[m - 1] + "/" + y + "...");
   await Promise.all([loadEnrollment(), loadScores(), loadBracket()]);
   setSync("Dados carregados.", "ok");
@@ -183,10 +196,16 @@ async function doLogout() {
 
 async function enterAdmin() {
   setSync("Carregando dados...");
-  await Promise.all([loadAthletes(), loadEnrollment(), loadScores(), loadBracket()]);
+  await Promise.all([loadAthletes(), loadEnrollment(), loadScores(), loadBracket(), loadScheduleSlots()]);
   refreshCategoryOptions();
   setSync("Conectado.", "ok");
   showPage("dashboard");
+}
+
+async function loadScheduleSlots() {
+  const { data, error } = await sb.from("schedule_slots").select("*").order("created_at");
+  if (error) { setSync("Erro ao carregar horários: " + error.message, "error"); return; }
+  scheduleSlots = data || [];
 }
 
 function setSync(msg, kind) {
@@ -323,27 +342,75 @@ function renderAthletesTable() {
   `).join("") || `<tr><td colspan="5">Nenhum atleta cadastrado ainda.</td></tr>`;
 }
 
+// ---------------- HORÁRIOS (schedule_slots) ----------------
+
+async function addScheduleSlot() {
+  const name = document.getElementById("newSlotName").value.trim();
+  const days = document.getElementById("newSlotDays").value.trim();
+  const time = document.getElementById("newSlotTime").value.trim();
+  if (!name) return alert("Dê um nome para o horário (ex: Horário 1).");
+  const { error } = await sb.from("schedule_slots").insert({ name, days_of_week: days, time_label: time });
+  if (error) return alert("Erro: " + error.message);
+  document.getElementById("newSlotName").value = "";
+  document.getElementById("newSlotDays").value = "";
+  document.getElementById("newSlotTime").value = "";
+  await loadScheduleSlots();
+  renderSlotsList();
+  setSync("Horário cadastrado.", "ok");
+}
+
+async function deleteScheduleSlot(id) {
+  if (!confirm("Excluir este horário? Isso não apaga os atletas já lançados nele em meses anteriores, só some da lista de opções.")) return;
+  const { error } = await sb.from("schedule_slots").delete().eq("id", id);
+  if (error) return alert("Erro: " + error.message);
+  await loadScheduleSlots();
+  renderSlotsList();
+  renderAgenda();
+}
+
+function renderSlotsList() {
+  const el = document.getElementById("slotsList");
+  if (!el) return;
+  el.innerHTML = scheduleSlots.map(s => `
+    <div class="item">
+      <span class="rankLeft">${s.name}${s.days_of_week ? " • " + s.days_of_week : ""}${s.time_label ? " • " + s.time_label : ""}</span>
+      <button class="danger" onclick="deleteScheduleSlot('${s.id}')">Excluir</button>
+    </div>
+  `).join("") || "<p class='smallText'>Nenhum horário cadastrado ainda. Adicione acima (ex: Horário 1, Terça e Quinta, 18h às 19h).</p>";
+}
+
 // ---------------- AGENDA ----------------
 
 function renderAgenda() {
   const picker = document.getElementById("agendaAthletePicker");
   picker.innerHTML = filteredAthletes().filter(a => a.active).map(a => `<option value="${a.id}">${a.full_name}</option>`).join("");
 
+  const slotPicker = document.getElementById("agendaSlotPicker");
+  if (!scheduleSlots.length) {
+    slotPicker.innerHTML = `<option value="">Cadastre um horário em Config</option>`;
+  } else {
+    slotPicker.innerHTML = scheduleSlots.map(s => `<option value="${s.name}">${s.name}${s.days_of_week ? " (" + s.days_of_week + ")" : ""}</option>`).join("");
+  }
+
   const copyPicker = document.getElementById("copyMonthPicker");
   const opts = [];
   for (let i = 1; i <= 12; i++) {
     if (i === currentMonth) continue;
-    opts.push(`<option value="${currentYear}-${i}">${MONTH_NAMES[i - 1]}/${currentYear}</option>`);
+    opts.push(`<option value="${currentYear}-${i}">${FULL_MONTH_NAMES[i - 1]}/${currentYear}</option>`);
   }
   copyPicker.innerHTML = opts.join("");
 
   const idSet = filteredAthleteIdSet();
   const grid = document.getElementById("agendaGrid");
-  const slots = ["Horário 1", "Horário 2"];
-  grid.innerHTML = slots.map(slot => {
-    const rows = enrollment.filter(e => e.schedule_slot === slot && idSet.has(e.athlete_id));
+  if (!scheduleSlots.length) {
+    grid.innerHTML = "<p class='smallText'>Nenhum horário cadastrado ainda. Vá em Config > Horários de treino para criar o primeiro.</p>";
+    return;
+  }
+  grid.innerHTML = scheduleSlots.map(s => {
+    const rows = enrollment.filter(e => e.schedule_slot === s.name && idSet.has(e.athlete_id));
+    const label = s.name + (s.days_of_week ? " • " + s.days_of_week : "") + (s.time_label ? " • " + s.time_label : "");
     return `<div class="slotCard">
-      <div class="slotTitle">${slot} (${rows.length})</div>
+      <div class="slotTitle">${label} (${rows.length})</div>
       ${rows.map(r => `<div class="item">
           <span class="rankLeft">${avatarHtml(r.athlete_id)} ${athleteName(r.athlete_id)}</span>
           <button class="danger" onclick="removeFromAgenda('${r.id}')">Remover</button>
@@ -356,6 +423,7 @@ async function addToAgenda() {
   const athleteId = document.getElementById("agendaAthletePicker").value;
   const slot = document.getElementById("agendaSlotPicker").value;
   if (!athleteId) return alert("Cadastre um atleta primeiro.");
+  if (!slot) return alert("Cadastre um horário em Config > Horários de treino primeiro.");
   const { error } = await sb.from("monthly_enrollment")
     .upsert({ athlete_id: athleteId, year: currentYear, month: currentMonth, schedule_slot: slot }, { onConflict: "athlete_id,year,month,schedule_slot" });
   if (error) return alert("Erro: " + error.message);
