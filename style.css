@@ -3,11 +3,11 @@ body{margin:0;background:radial-gradient(circle at top,#0b52ff 0,#06117a 42%,#02
 .app{max-width:1200px;margin:auto;padding-bottom:40px}
 .hidden{display:none!important}
 
-.hero{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;padding:18px 20px;background:linear-gradient(120deg,#06117a,#0b52ff,#06117a);border-bottom:1px solid rgba(126,224,255,.35)}
-.heroLogo{width:64px;height:64px;object-fit:contain}
-.heroTitle{font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:1px}
-.heroSub{color:#7ee0ff;font-size:13px;font-weight:700}
-.monthSelect{width:auto;min-width:130px}
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:34px 20px 22px;background-size:cover;background-position:center;border-bottom:1px solid rgba(126,224,255,.35)}
+.heroLogo{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))}
+.heroTitle{font-size:30px;font-weight:900;text-transform:uppercase;letter-spacing:1px;line-height:1.15;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.heroSub{color:#7ee0ff;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-shadow:0 0 12px rgba(126,224,255,.5)}
+.monthSelect{width:100%;max-width:340px;text-align:center;text-transform:uppercase;font-weight:900;letter-spacing:1px}
 
 select,input,button{min-height:46px;border-radius:12px;border:1px solid rgba(126,224,255,.45);background:#10233d;color:#fff;padding:10px 12px;font-size:15px;font-weight:700}
 select option{color:#111}
@@ -82,7 +82,6 @@ td.sticky{background:#061334!important}
 .parentLogo{width:90px;height:90px;object-fit:contain;display:block;margin:0 auto 10px}
 
 @media(max-width:640px){
-  .hero{grid-template-columns:1fr;text-align:center}
   .monthSelect{width:100%}
   .tabs{grid-template-columns:repeat(4,1fr)}
   table{min-width:520px}
