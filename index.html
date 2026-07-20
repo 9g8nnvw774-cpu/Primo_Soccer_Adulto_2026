@@ -183,6 +183,17 @@
   <!-- CONFIG -->
   <section id="page-config" class="page hidden">
     <div class="card">
+      <h2>Horários de treino</h2>
+      <p>Cadastre os horários fixos (dias da semana + faixa de horário). Eles aparecem na Agenda todo mês.</p>
+      <div class="form form2">
+        <input id="newSlotName" placeholder="Nome (ex: Horário 1)">
+        <input id="newSlotDays" placeholder="Dias (ex: Terça e Quinta)">
+        <input id="newSlotTime" placeholder="Horário (ex: 18h às 19h)">
+        <button class="success" id="btnAddSlot">Adicionar horário</button>
+      </div>
+      <div id="slotsList"></div>
+    </div>
+    <div class="card">
       <h2>Configurações</h2>
       <button class="secondary" id="btnCopyStudentLink">Copiar link dos atletas</button>
       <button class="secondary" id="btnCopyParentLink">Copiar link dos pais</button>
