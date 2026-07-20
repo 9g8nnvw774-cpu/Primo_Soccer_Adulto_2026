@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Primo Soccer League</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app" id="app">
+
+  <header class="hero" id="hero">
+    <img id="heroLogo" class="heroLogo" alt="Logo">
+    <div class="heroText">
+      <div class="heroTitle" id="heroTitle">PRIMO SOCCER LEAGUE</div>
+      <div class="heroSub" id="heroSub">Painel administrativo</div>
+    </div>
+    <select id="monthSelect" class="monthSelect"></select>
+    <select id="categorySelect" class="monthSelect"><option value="">Todas categorias</option></select>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-page="dashboard">Início</button>
+    <button data-page="cadastro">Cadastro</button>
+    <button data-page="agenda">Agenda</button>
+    <button data-page="pontuacao">Pontuação</button>
+    <button data-page="ranking">Ranking</button>
+    <button data-page="matamata">Mata-mata</button>
+    <button data-page="imprimir">Imprimir</button>
+    <button data-page="config">Config</button>
+  </nav>
+
+  <div id="syncStatus" class="sync"></div>
+
+  <!-- LOGIN -->
+  <section id="page-login" class="page">
+    <div class="card loginCard">
+      <h2>Entrar no painel</h2>
+      <p>Acesso restrito ao administrador. Alunos e pais usam o link somente leitura.</p>
+      <div class="form form1">
+        <input id="loginEmail" type="email" placeholder="E-mail do administrador" autocomplete="username">
+        <input id="loginPass" type="password" placeholder="Senha" autocomplete="current-password">
+        <button class="success" id="btnLogin">Entrar</button>
+      </div>
+      <p id="loginError" class="errorText"></p>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="page-dashboard" class="page hidden">
+    <div class="card">
+      <h2>Visão geral</h2>
+      <p>Cadastre atletas, organize a agenda mensal, lance a pontuação semanal e gere o mata-mata.</p>
+    </div>
+    <div class="grid3">
+      <div class="card mini"><h3>Ativos no mês</h3><strong id="dashActive">0</strong></div>
+      <div class="card mini"><h3>Cadastrados</h3><strong id="dashTotal">0</strong></div>
+      <div class="card mini"><h3>Pontos do mês</h3><strong id="dashPoints">0</strong></div>
+    </div>
+  </section>
+
+  <!-- CADASTRO -->
+  <section id="page-cadastro" class="page hidden">
+    <div class="card">
+      <h2>Cadastro de atleta</h2>
+      <div class="form form2">
+        <input id="newAthleteName" placeholder="Nome completo">
+        <input id="newAthleteCategory" placeholder="Categoria (ex: Adulto, Kids)">
+        <label class="photoLabel">
+          <span id="newPhotoPreview" class="avatar">+ foto</span>
+          <input id="newAthletePhoto" type="file" accept="image/*" class="hidden">
+        </label>
+        <button class="success" id="btnAddAthlete">Cadastrar</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Atletas cadastrados</h2>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>Foto</th><th>Nome</th><th>Categoria</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="athletesTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGENDA -->
+  <section id="page-agenda" class="page hidden">
+    <div class="card">
+      <h2>Agenda do mês</h2>
+      <p>Selecione um atleta cadastrado e adicione a um horário do mês atual.</p>
+      <div class="form form2">
+        <select id="agendaAthletePicker"></select>
+        <select id="agendaSlotPicker">
+          <option>Horário 1</option>
+          <option>Horário 2</option>
+        </select>
+        <button class="success" id="btnAddToAgenda">Adicionar no horário</button>
+      </div>
+      <div class="form form2">
+        <select id="copyMonthPicker"></select>
+        <button class="secondary" id="btnCopyAgenda">Copiar agenda deste mês</button>
+      </div>
+    </div>
+    <div id="agendaGrid" class="gridCards"></div>
+  </section>
+
+  <!-- PONTUAÇÃO -->
+  <section id="page-pontuacao" class="page hidden">
+    <div class="card">
+      <h2>Pontuação semanal</h2>
+      <div class="form form2">
+        <select id="scoreWeek">
+          <option value="1">Semana 1</option>
+          <option value="2">Semana 2</option>
+          <option value="3">Semana 3</option>
+          <option value="4">Semana 4</option>
+          <option value="5">Semana 5</option>
+        </select>
+        <button class="success" id="btnFinishTraining">Finalizar treino e salvar</button>
+      </div>
+      <p class="smallText">Use + e − para ajustar vitórias/empates/derrotas. Ao salvar, um novo registro é criado (o histórico anterior nunca é apagado).</p>
+    </div>
+    <div class="card">
+      <div class="tableWrap">
+        <table class="scoreTable">
+          <thead><tr><th class="sticky">Atleta</th><th>Vitórias</th><th>Empates</th><th>Derrotas</th><th>Pontos</th></tr></thead>
+          <tbody id="scoreTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section id="page-ranking" class="page hidden">
+    <div class="card">
+      <h2>Ranking do mês</h2>
+      <div id="monthlyRanking" class="rankList"></div>
+    </div>
+    <div class="card">
+      <h2>Ranking anual</h2>
+      <div class="tableWrap">
+        <table>
+          <thead><tr id="annualHeader"></tr></thead>
+          <tbody id="annualBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- MATA-MATA -->
+  <section id="page-matamata" class="page hidden">
+    <div class="card">
+      <h2>Mata-mata</h2>
+      <p>Gere as quartas de final com os 8 melhores colocados do ranking do mês.</p>
+      <div class="form form2" id="bracketAdminControls">
+        <button class="success" id="btnGenerateBracket">Gerar quartas com top 8</button>
+        <button class="danger" id="btnResetBracket">Resetar mata-mata</button>
+      </div>
+    </div>
+    <div id="bracketArea" class="bracketArea"></div>
+  </section>
+
+  <!-- IMPRIMIR / STORIES -->
+  <section id="page-imprimir" class="page hidden">
+    <div class="card">
+      <h2>Imagem para Stories (1080x1920)</h2>
+      <p>Gere uma imagem pronta para postar, já no formato de Stories do Instagram.</p>
+      <div class="form form2">
+        <button class="success" id="btnStoryRanking">Gerar imagem: Ranking do mês</button>
+        <button class="success" id="btnStoryAnual">Gerar imagem: Ranking anual</button>
+        <button class="success" id="btnStoryBracket">Gerar imagem: Mata-mata</button>
+      </div>
+    </div>
+    <div class="card" id="storyPreviewCard" style="display:none">
+      <h2>Prévia</h2>
+      <canvas id="storyCanvas" width="1080" height="1920" class="storyCanvas"></canvas>
+      <a id="storyDownload" class="success storyDownloadBtn" download="story.png">Baixar imagem</a>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section id="page-config" class="page hidden">
+    <div class="card">
+      <h2>Configurações</h2>
+      <button class="secondary" id="btnCopyStudentLink">Copiar link dos atletas</button>
+      <button class="secondary" id="btnCopyParentLink">Copiar link dos pais</button>
+      <button class="secondary" id="btnExportBackup">Exportar backup (JSON)</button>
+      <button class="secondary" id="btnViewHistory">Ver histórico de alterações</button>
+      <button class="danger" id="btnLogout">Sair do painel</button>
+      <p id="linkText" class="smallText"></p>
+      <hr class="softLine">
+      <div id="historyArea"></div>
+    </div>
+  </section>
+
+  <!-- LINK SOMENTE LEITURA (aluno / pais) -->
+  <section id="page-readonly" class="page hidden">
+    <div class="card readonlyHeader">
+      <img id="readonlyLogo" class="parentLogo" alt="Logo">
+      <h2 id="readonlyTitle">PRIMO SOCCER LEAGUE</h2>
+      <p id="readonlySub"></p>
+    </div>
+    <div class="card">
+      <h2>Ranking do mês</h2>
+      <div id="readonlyRanking" class="rankList"></div>
+    </div>
+    <div id="readonlyBracketCard" class="card hidden">
+      <h2>Mata-mata</h2>
+      <div id="readonlyBracket" class="bracketArea"></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

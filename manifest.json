@@ -1,0 +1,11 @@
+{
+  "name": "Primo Soccer League",
+  "short_name": "Primo Soccer",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#020817",
+  "theme_color": "#06117a",
+  "icons": [
+    { "src": "assets/logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
