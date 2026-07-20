@@ -1,11 +1,15 @@
 {
-  "name": "Primo Soccer League",
+  "name": "Primo Soccer League 2026",
   "short_name": "Primo Soccer",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#020817",
   "theme_color": "#06117a",
   "icons": [
-    { "src": "logo.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }

@@ -1,15 +1,16 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:radial-gradient(circle at top,#0b52ff 0,#06117a 42%,#020817 100%);color:#fff;font-family:Arial,Helvetica,sans-serif;min-height:100vh}
+body{margin:0;background:#020817;color:#fff;font-family:Arial,Helvetica,sans-serif;min-height:100vh}
 .app{max-width:1200px;margin:auto;padding-bottom:40px}
 .hidden{display:none!important}
 
-.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:34px 20px 22px;background-size:cover;background-position:center;border-bottom:1px solid rgba(126,224,255,.35)}
-.heroLogo{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))}
-.heroTitle{font-size:30px;font-weight:900;text-transform:uppercase;letter-spacing:1px;line-height:1.15;text-shadow:0 2px 10px rgba(0,0,0,.6)}
-.heroSub{color:#7ee0ff;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:2px;text-shadow:0 0 12px rgba(126,224,255,.5)}
-.monthSelect{width:100%;max-width:340px;text-align:center;text-transform:uppercase;font-weight:900;letter-spacing:1px}
+/* CABEÇALHO estilo imagem 1 */
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:30px 20px 22px;background-size:cover;background-position:center;border-bottom:1px solid rgba(126,224,255,.35)}
+.heroLogo{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.7))}
+.heroTitle{font-size:34px;font-weight:900;text-transform:uppercase;letter-spacing:1px;line-height:1.05;text-shadow:0 3px 14px rgba(0,0,0,.85)}
+.heroSub{color:#7ee0ff;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:3px;text-shadow:0 0 16px rgba(126,224,255,.55)}
+.monthSelect{width:100%;max-width:360px;text-align:center;text-transform:uppercase;font-weight:900;letter-spacing:1px;margin-top:6px}
 
-select,input,button{min-height:46px;border-radius:12px;border:1px solid rgba(126,224,255,.45);background:#10233d;color:#fff;padding:10px 12px;font-size:15px;font-weight:700}
+select,input,button,textarea{min-height:46px;border-radius:12px;border:1px solid rgba(126,224,255,.45);background:#10233d;color:#fff;padding:10px 12px;font-size:15px;font-weight:700;font-family:inherit}
 select option{color:#111}
 button{border:0;background:#dbeafe;color:#071629;font-weight:900;cursor:pointer}
 .success{background:#8ff0b3!important}
@@ -40,20 +41,24 @@ button+button{margin-top:8px}
 .form{display:grid;gap:10px;margin-top:10px}
 .form1{grid-template-columns:1fr}
 .form2{grid-template-columns:1fr}
-@media(min-width:640px){.form2{grid-template-columns:2fr 2fr 1fr}}
+@media(min-width:640px){.form2{grid-template-columns:1fr 1fr}}
+
+.rulesBox{width:100%;min-height:130px;line-height:1.4}
+.rulesView{white-space:pre-wrap;color:#eaf4ff;font-size:15px;line-height:1.5;font-weight:600}
 
 .tableWrap{overflow:auto;-webkit-overflow-scrolling:touch}
-table{width:100%;min-width:600px;border-collapse:collapse;background:#061334}
+table{width:100%;min-width:560px;border-collapse:collapse;background:#061334}
 th{background:#071c47;color:#7ee0ff;text-transform:uppercase;font-size:11px;padding:8px;border:1px solid rgba(126,224,255,.22)}
 td{padding:8px;border:1px solid rgba(126,224,255,.15);text-align:center;font-weight:700;font-size:14px}
 tbody tr:nth-child(odd){background:#071f65}
 tbody tr:nth-child(even){background:#05194d}
-.sticky{position:sticky;left:0;background:#071c47!important;z-index:3;min-width:170px;text-align:left}
+.sticky{position:sticky;left:0;background:#071c47!important;z-index:3;min-width:150px;text-align:left}
 td.sticky{background:#061334!important}
 
-.avatar{width:40px;height:40px;border-radius:50%;border:2px solid #7ee0ff;background:#061334;display:inline-grid;place-items:center;color:#7ee0ff;font-weight:900;overflow:hidden;font-size:11px;text-align:center}
+.avatar{width:40px;height:40px;border-radius:50%;border:2px solid #7ee0ff;background:#061334;display:inline-grid;place-items:center;color:#7ee0ff;font-weight:900;overflow:hidden;font-size:11px;text-align:center;cursor:pointer}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .photoLabel{display:flex;align-items:center;gap:8px;cursor:pointer}
+.idTag{color:#7ee0ff;font-weight:900}
 
 .gridCards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;padding:14px}
 .slotCard{background:#061334;border:1px solid rgba(126,224,255,.28);border-radius:16px;padding:12px}
@@ -61,28 +66,48 @@ td.sticky{background:#061334!important}
 
 .item,.rankRow{display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,255,255,.08);border-radius:10px;padding:9px;margin:6px 0}
 .rankLeft{display:flex;align-items:center;gap:8px;font-weight:800}
-.rankPos{color:#7ee0ff;font-weight:900;min-width:22px}
+.rankPos{color:#7ee0ff;font-weight:900;min-width:26px}
 
 .scoreTable td button{min-height:34px;min-width:34px;padding:0;font-size:16px}
 .scoreCounter{display:flex;align-items:center;gap:6px;justify-content:center}
-.scoreCounter span{min-width:22px;display:inline-block}
+.scoreCounter span{min-width:24px;display:inline-block}
+.unBtn{min-width:44px;font-weight:900}
+.unBtn.v0{background:#ff8585!important}
+.unBtn.v5{background:#ffd479!important}
+.unBtn.v7{background:#8ff0b3!important}
+.pTotal{color:#7ee0ff;font-weight:900;font-size:16px}
 
-.bracketArea{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;padding:14px}
-.matchCard{background:#061334;border:1px solid rgba(126,224,255,.28);border-radius:14px;padding:12px}
-.matchCard h4{margin:0 0 8px;color:#7ee0ff;font-size:13px;text-transform:uppercase}
-.matchRow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(126,224,255,.15)}
-.matchRow input{width:56px;min-height:34px;padding:4px}
-.matchRow.winner{color:#8ff0b3;font-weight:900}
+/* MATA-MATA estilo imagem 2 */
+.bracketArea{padding:14px}
+.phaseTitle{text-align:center;font-size:26px;font-weight:900;color:#8ff0b3;text-transform:uppercase;letter-spacing:2px;margin:18px 0 10px;text-shadow:0 0 14px rgba(143,240,179,.4)}
+.phaseTitle.final{color:#7ee0ff;text-shadow:0 0 14px rgba(126,224,255,.5)}
+.bracketGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.matchCard{background:linear-gradient(180deg,#0a1a33,#050d1f);border:1px solid rgba(143,240,179,.35);border-radius:14px;padding:12px;box-shadow:0 0 18px rgba(143,240,179,.08)}
+.matchCard h4{margin:0 0 10px;color:#8ff0b3;font-size:12px;text-transform:uppercase;text-align:center;letter-spacing:1px}
+.matchTeams{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.teamBox{flex:1;text-align:center}
+.teamBox .bigAvatar{width:64px;height:64px;border-radius:50%;border:2px solid #8ff0b3;object-fit:cover;cursor:pointer;background:#061334}
+.teamBox .seed{color:#7ee0ff;font-weight:900;font-size:13px}
+.teamBox .tname{font-weight:900;font-size:13px;margin-top:4px;text-transform:uppercase}
+.teamBox .tpts{color:#8ff0b3;font-size:12px;font-weight:700}
+.vsX{color:#8ff0b3;font-weight:900;font-size:20px}
+.teamBox.winner .tname{color:#8ff0b3}
+.matchScoreRow{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.matchScoreRow input{width:56px;min-height:34px;padding:4px;text-align:center}
+.tbd{width:64px;height:64px;border-radius:50%;border:2px dashed rgba(126,224,255,.4);display:inline-grid;place-items:center;color:#7ee0ff;font-size:24px;font-weight:900}
 
 .errorText{color:#ff8585;font-weight:800;min-height:20px}
-.smallText{font-size:12px;color:#dbeafe;word-break:break-all}
+.smallText{font-size:12px;color:#dbeafe;word-break:break-word}
 .softLine{border:0;border-top:1px solid rgba(126,224,255,.25);margin:16px 0}
 .loginCard{max-width:420px;margin:40px auto}
-.readonlyHeader{text-align:center}
-.parentLogo{width:90px;height:90px;object-fit:contain;display:block;margin:0 auto 10px}
+.readonlyHeader{text-align:center;background-size:cover;background-position:center}
+.parentLogo{width:110px;height:110px;object-fit:contain;display:block;margin:0 auto 10px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.7))}
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.lightbox img{max-width:100%;max-height:100%;border-radius:16px;border:3px solid #7ee0ff}
 
 @media(max-width:640px){
-  .monthSelect{width:100%}
   .tabs{grid-template-columns:repeat(4,1fr)}
-  table{min-width:520px}
+  table{min-width:500px}
 }
