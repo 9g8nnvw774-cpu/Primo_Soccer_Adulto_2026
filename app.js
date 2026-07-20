@@ -84,6 +84,7 @@ function wireEvents(){
   document.getElementById("btnLogout").addEventListener("click",doLogout);
   document.getElementById("monthSelect").addEventListener("change",onMonthChange);
   document.getElementById("newAthletePhoto").addEventListener("change",onNewPhotoChosen);
+  document.getElementById("changePhotoInput").addEventListener("change",onChangePhotoChosen);
   document.getElementById("btnAddAthlete").addEventListener("click",addAthlete);
   document.getElementById("scoreSlot").addEventListener("change",renderScorePage);
   document.getElementById("scoreWeek").addEventListener("change",renderScorePage);
@@ -180,10 +181,26 @@ function renderAthletesTable(){
       <td style="text-align:left">${a.full_name}</td>
       <td>${a.active?"Ativo":"Inativo"}</td>
       <td>
+        <button class="secondary" onclick="changePhoto('${a.id}')">Trocar foto</button>
         <button class="secondary" onclick="toggleActive('${a.id}',${!a.active})">${a.active?"Desativar":"Ativar"}</button>
         <button class="danger" onclick="deleteAthlete('${a.id}')">Excluir</button>
       </td>
     </tr>`).join("")||`<tr><td colspan="5">Nenhum atleta cadastrado ainda.</td></tr>`;
+}
+function changePhoto(id){
+  const input=document.getElementById("changePhotoInput");
+  input.dataset.athleteId=id;
+  input.value="";
+  input.click();
+}
+async function onChangePhotoChosen(e){
+  const f=e.target.files[0];if(!f)return;
+  const id=e.target.dataset.athleteId;
+  setSync("Enviando foto...");
+  const dataUrl=await compressImage(f,320,.72);
+  const{error}=await sb.from("athletes").update({photo_url:dataUrl}).eq("id",id);
+  if(error){setSync("Erro ao trocar foto: "+error.message,"error");return;}
+  await loadAthletes();renderAthletesTable();setSync("Foto atualizada.","ok");
 }
 
 // ---------------- HORÁRIOS + ATLETAS ----------------
@@ -282,33 +299,47 @@ function renderScorePage(){
 }
 function counter(id,field,val){return `<span class="scoreCounter">
   <button class="secondary" onclick="adjust('${id}','${field}',-1)">−</button>
-  <span id="${field}-${id}">${val}</span>
+  <input class="scoreInput" id="${field}-${id}" type="number" inputmode="numeric" min="0" value="${val}" onchange="onScoreInput('${id}')" onfocus="this.select()">
   <button class="secondary" onclick="adjust('${id}','${field}',1)">+</button></span>`;}
 function unBtn(id,val){const cls=val===7?"v7":val===5?"v5":"v0";return `<button class="unBtn ${cls}" id="un-${id}" onclick="cycleUn('${id}')">${val}</button>`;}
 
+function fieldVal(id,field){
+  const el=document.getElementById(field+"-"+id);
+  if(!el)return 0;
+  return Number((el.value!==undefined?el.value:el.textContent)||0);
+}
 function readRow(id){
-  const pd=Number(document.getElementById("pd-"+id)?.textContent||0);
-  const pe=Number(document.getElementById("pe-"+id)?.textContent||0);
-  const un=Number(document.getElementById("un-"+id)?.textContent||0);
-  return{pd,pe,un};
+  return{pd:Math.max(0,fieldVal(id,"pd")),pe:Math.max(0,fieldVal(id,"pe")),un:fieldVal(id,"un")};
+}
+function refreshTotal(id){
+  const{pd,pe,un}=readRow(id);
+  const t=document.getElementById("tot-"+id);
+  if(t)t.textContent=pd+pe+un;
+}
+function onScoreInput(id){
+  const{pd,pe,un}=readRow(id);
+  document.getElementById("pd-"+id).value=pd;
+  document.getElementById("pe-"+id).value=pe;
+  refreshTotal(id);
+  autosave(id);
 }
 function adjust(id,field,delta){
   const el=document.getElementById(field+"-"+id);
-  let v=Math.max(0,Number(el.textContent)+delta);el.textContent=v;
-  const{pd,pe,un}=readRow(id);document.getElementById("tot-"+id).textContent=pd+pe+un;
+  let v=Math.max(0,fieldVal(id,field)+delta);el.value=v;
+  refreshTotal(id);
   autosave(id);
 }
 function cycleUn(id){
   const el=document.getElementById("un-"+id);
   const next={0:5,5:7,7:0}[Number(el.textContent)];
   el.textContent=next;el.className="unBtn "+(next===7?"v7":next===5?"v5":"v0");
-  const{pd,pe,un}=readRow(id);document.getElementById("tot-"+id).textContent=pd+pe+un;
+  refreshTotal(id);
   autosave(id);
 }
 function autosave(id){
   clearTimeout(saveTimers[id]);
   setSync("Salvando...");
-  saveTimers[id]=setTimeout(()=>saveScore(id),500);
+  saveTimers[id]=setTimeout(()=>saveScore(id),600);
 }
 async function saveScore(id,finished){
   const slotId=currentSlotId(),week=currentWeek();
@@ -319,7 +350,13 @@ async function saveScore(id,finished){
   if(finished!==undefined)payload.finished=finished;
   const{error}=await sb.from("scores").upsert(payload,{onConflict:"athlete_id,year,month,week,slot_id"});
   if(error){setSync("Erro ao salvar: "+error.message,"error");return;}
-  await loadScores();setSync("Salvo.","ok");
+  // atualiza os dados em memória SEM redesenhar a tabela (evita a tela "pular")
+  await loadScoresQuiet();
+  setSync("Salvo.","ok");
+}
+async function loadScoresQuiet(){
+  const{data,error}=await sb.from("scores").select("*").eq("year",currentYear).eq("month",currentMonth);
+  if(!error)scores=data||[];
 }
 async function finishSlot(){
   const slotId=currentSlotId(),week=currentWeek();

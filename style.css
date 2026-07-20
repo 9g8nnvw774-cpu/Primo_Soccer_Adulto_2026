@@ -71,6 +71,7 @@ td.sticky{background:#061334!important}
 .scoreTable td button{min-height:34px;min-width:34px;padding:0;font-size:16px}
 .scoreCounter{display:flex;align-items:center;gap:6px;justify-content:center}
 .scoreCounter span{min-width:24px;display:inline-block}
+.scoreInput{width:52px;min-height:34px;padding:4px;text-align:center;font-weight:900;font-size:15px}
 .unBtn{min-width:44px;font-weight:900}
 .unBtn.v0{background:#ff8585!important}
 .unBtn.v5{background:#ffd479!important}
