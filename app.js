@@ -398,7 +398,7 @@ async function generateBracket(){
   await sb.from("bracket_matches").delete().eq("year",currentYear).eq("month",currentMonth);
   const rows=pairs.map(([a,b],idx)=>({year:currentYear,month:currentMonth,phase:"quartas",
     athlete_a:top8[a].athlete_id,athlete_b:top8[b].athlete_id,
-    score_a:top8[a].points,score_b:top8[b].points}));
+    score_a:null,score_b:null}));
   const{error}=await sb.from("bracket_matches").insert(rows);
   if(error)return alert("Erro: "+error.message);
   await loadBracket();renderBracket();setSync("Chaveamento gerado.","ok");
@@ -497,8 +497,10 @@ async function loadHistory(){
 }
 
 // ---------------- IMPRIMIR / STORIES ----------------
-function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+
 async function generateStoryImage(kind){
+  if(kind==="matamata"){return generateBracketImage();}
   const c=document.getElementById("storyCanvas"),ctx=c.getContext("2d"),W=c.width,H=c.height;
   const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#0b52ff");g.addColorStop(.45,"#06117a");g.addColorStop(1,"#020817");
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
@@ -507,18 +509,182 @@ async function generateStoryImage(kind){
   let title="",rows=[];
   if(kind==="ranking"){title=`RANKING • ${MONTH_NAMES[currentMonth-1]}/${currentYear}`;rows=computeRanking(scores).map((r,i)=>({pos:i+1,name:athleteName(r.athlete_id),value:r.points+" pts"}));}
   else if(kind==="anual"){title=`RANKING ANUAL • ${currentYear}`;const t={};annualScores.forEach(s=>t[s.athlete_id]=(t[s.athlete_id]||0)+s.points);rows=Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([id,p],i)=>({pos:i+1,name:athleteName(id),value:p+" pts"}));}
-  else{title=`MATA-MATA • ${MONTH_NAMES[currentMonth-1]}/${currentYear}`;const pl={quartas:"Quartas",semi:"Semi",final:"Final"};rows=bracket.map(m=>({pos:"",name:`${athleteName(m.athlete_a)} ${m.score_a??"-"} x ${m.score_b??"-"} ${athleteName(m.athlete_b)}`,value:pl[m.phase]||""}));}
   ctx.font="700 38px Arial";ctx.fillStyle="#7ee0ff";ctx.fillText(title,W/2,410);
   if(!rows.length){ctx.font="700 34px Arial";ctx.fillStyle="#dbeafe";ctx.fillText("Sem dados ainda.",W/2,500);}
   let y=500;ctx.textAlign="left";
   rows.slice(0,16).forEach(r=>{ctx.font="900 36px Arial";ctx.fillStyle="#fff";ctx.fillText((r.pos?r.pos+"º  ":"")+r.name,70,y,W-260);ctx.textAlign="right";ctx.fillStyle="#7ee0ff";ctx.font="900 32px Arial";ctx.fillText(String(r.value),W-70,y);ctx.textAlign="left";y+=74;});
-  document.getElementById("storyPreviewCard").style.display="block";
-  const link=document.getElementById("storyDownload");link.href=c.toDataURL("image/png");link.download=`primo-${kind}-${currentYear}-${currentMonth}.png`;
+  finishStory(kind);
+}
+
+function finishStory(kind){
+  const card=document.getElementById("storyPreviewCard");
+  if(card)card.style.display="block";
+  const link=document.getElementById("storyDownload");
+  if(link){const c=document.getElementById("storyCanvas");link.href=c.toDataURL("image/png");link.download=`primo-${kind}-${currentYear}-${currentMonth}.png`;}
+}
+
+// desenha um card de atleta no chaveamento
+async function drawPlayerCard(ctx,x,y,w,h,athleteId,seed,winner){
+  // moldura
+  ctx.fillStyle="rgba(10,20,35,.9)";
+  roundRect(ctx,x,y,w,h,14);ctx.fill();
+  ctx.lineWidth=2;ctx.strokeStyle=winner?"#8ff0b3":"rgba(143,240,179,.35)";
+  roundRect(ctx,x,y,w,h,14);ctx.stroke();
+  // foto redonda
+  const cx=x+w/2, cy=y+56, r=44;
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.closePath();ctx.clip();
+  const photo=athletePhoto(athleteId);
+  if(photo){try{const img=await loadImage(photo);ctx.drawImage(img,cx-r,cy-r,r*2,r*2);}catch(e){ctx.fillStyle="#061334";ctx.fillRect(cx-r,cy-r,r*2,r*2);}}
+  else{ctx.fillStyle="#061334";ctx.fillRect(cx-r,cy-r,r*2,r*2);}
+  ctx.restore();
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.lineWidth=3;ctx.strokeStyle=winner?"#8ff0b3":"#7ee0ff";ctx.stroke();
+  // seed
+  if(seed){ctx.fillStyle="#ffd479";ctx.font="900 22px Arial";ctx.textAlign="left";ctx.fillText(seed+"º",x+10,y+26);}
+  // nome
+  ctx.fillStyle=winner?"#8ff0b3":"#fff";ctx.font="900 20px Arial";ctx.textAlign="center";
+  ctx.fillText((athleteName(athleteId)||"").toUpperCase(),cx,y+h-14,w-12);
+}
+
+function drawTbdCard(ctx,x,y,w,h,label){
+  ctx.fillStyle="rgba(10,20,35,.7)";roundRect(ctx,x,y,w,h,14);ctx.fill();
+  ctx.lineWidth=2;ctx.strokeStyle="rgba(126,224,255,.3)";roundRect(ctx,x,y,w,h,14);ctx.stroke();
+  const cx=x+w/2,cy=y+56,r=44;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.setLineDash([6,6]);ctx.strokeStyle="rgba(126,224,255,.5)";ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle="#7ee0ff";ctx.font="900 40px Arial";ctx.textAlign="center";ctx.fillText("?",cx,cy+14);
+  ctx.fillStyle="#9fb8d6";ctx.font="800 16px Arial";ctx.fillText(label||"A DEFINIR",cx,y+h-14);
+}
+
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+async function generateBracketImage(){
+  const c=document.getElementById("storyCanvas"),ctx=c.getContext("2d"),W=c.width,H=c.height; // 1080x1920
+  // fundo escuro com brilho
+  ctx.fillStyle="#02060f";ctx.fillRect(0,0,W,H);
+  const glow=ctx.createRadialGradient(W/2,120,50,W/2,120,700);
+  glow.addColorStop(0,"rgba(20,60,120,.5)");glow.addColorStop(1,"rgba(2,6,15,0)");
+  ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+
+  // logos laterais
+  try{const logo=await loadImage(window.PRIMO_CONFIG.logo);
+    ctx.drawImage(logo,40,70,150,150);
+    ctx.drawImage(logo,W-190,70,150,150);}catch(e){}
+
+  // TÍTULO
+  ctx.textAlign="center";
+  ctx.fillStyle="#b6ff3d";ctx.font="italic 900 78px Arial";ctx.fillText("PRIMO SOCCER",W/2,120);
+  ctx.fillStyle="#b6ff3d";ctx.font="italic 900 60px Arial";ctx.fillText("MATA-MATA",W/2,190);
+  ctx.font="italic 900 60px Arial";
+  ctx.fillStyle="#fff";ctx.fillText("QUARTAS DE ",W/2-70,255);
+  const qm=ctx.measureText("QUARTAS DE ").width;
+  ctx.fillStyle="#7ec8ff";ctx.textAlign="left";ctx.fillText("FINAL",W/2-70+qm/2,255);
+  ctx.textAlign="center";
+  ctx.fillStyle="#b6ff3d";ctx.font="700 24px Arial";
+  ctx.fillText("Início: Semana 3  |  Classificação até o fim da Semana 2",W/2,300);
+  // linha divisória
+  ctx.strokeStyle="#b6ff3d";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(40,325);ctx.lineTo(W-40,325);ctx.stroke();
+
+  const q=bracket.filter(m=>m.phase==="quartas");
+  const seedRank=computeRanking(scores.filter(s=>s.week<=2));
+  const seedOf={};seedRank.forEach((r,i)=>seedOf[r.athlete_id]=i+1);
+
+  if(!q.length){
+    ctx.fillStyle="#dbeafe";ctx.font="800 34px Arial";ctx.fillText("Gere o chaveamento primeiro (aba Mata-mata).",W/2,700);
+    finishStory("matamata");return;
+  }
+
+  // QUARTAS — 4 confrontos, 2 colunas x 2 linhas
+  ctx.fillStyle="#b6ff3d";ctx.font="900 40px Arial";ctx.fillText("QUARTAS DE FINAL",W/2,385);
+  const cardW=210,cardH=150,gapX=30,pairGap=90;
+  const leftX=60, rightX=W-60-cardW*2-gapX;
+  const rowY=[430,620];
+  const semi=bracket.filter(m=>m.phase==="semi");
+  const final=bracket.filter(m=>m.phase==="final");
+
+  for(let i=0;i<q.length;i++){
+    const m=q[i];
+    const col=i<2?0:1;
+    const row=i%2;
+    const baseX=col===0?leftX:rightX;
+    const y=rowY[row];
+    // label do confronto
+    ctx.fillStyle="#cfe6ff";ctx.font="800 18px Arial";ctx.textAlign="center";
+    ctx.fillText(`QUARTAS #${i+1}`,baseX+cardW+gapX/2,y-12);
+    await drawPlayerCard(ctx,baseX,y,cardW,cardH,m.athlete_a,seedOf[m.athlete_a],m.winner===m.athlete_a);
+    ctx.fillStyle="#b6ff3d";ctx.font="900 30px Arial";ctx.textAlign="center";ctx.fillText("X",baseX+cardW+gapX/2,y+cardH/2+8);
+    await drawPlayerCard(ctx,baseX+cardW+gapX,y,cardW,cardH,m.athlete_b,seedOf[m.athlete_b],m.winner===m.athlete_b);
+  }
+
+  // SEMI FINAL
+  const semiY=940;
+  ctx.fillStyle="#b6ff3d";ctx.font="900 40px Arial";ctx.textAlign="center";ctx.fillText("SEMI FINAL",W/2,semiY-20);
+  const semiRow=[[semi[0],"SEMI #1",leftX],[semi[1],"SEMI #2",rightX]];
+  for(let i=0;i<2;i++){
+    const [m,label,baseX]=semiRow[i];
+    ctx.fillStyle="#cfe6ff";ctx.font="800 18px Arial";ctx.fillText(label,baseX+cardW+gapX/2,semiY+8);
+    if(m){
+      await drawPlayerCard(ctx,baseX,semiY+20,cardW,cardH,m.athlete_a,null,m.winner===m.athlete_a);
+      ctx.fillStyle="#b6ff3d";ctx.font="900 30px Arial";ctx.fillText("X",baseX+cardW+gapX/2,semiY+20+cardH/2+8);
+      await drawPlayerCard(ctx,baseX+cardW+gapX,semiY+20,cardW,cardH,m.athlete_b,null,m.winner===m.athlete_b);
+    }else{
+      drawTbdCard(ctx,baseX,semiY+20,cardW,cardH);
+      ctx.fillStyle="#b6ff3d";ctx.font="900 30px Arial";ctx.fillText("X",baseX+cardW+gapX/2,semiY+20+cardH/2+8);
+      drawTbdCard(ctx,baseX+cardW+gapX,semiY+20,cardW,cardH);
+    }
+  }
+
+  // FINAL
+  const finalY=1320;
+  ctx.fillStyle="#7ec8ff";ctx.font="900 48px Arial";ctx.textAlign="center";ctx.fillText("FINAL",W/2,finalY-10);
+  ctx.fillStyle="#cfe6ff";ctx.font="800 18px Arial";ctx.fillText("FINAL #1",W/2,finalY+18);
+  const fx=W/2-cardW-gapX/2;
+  const fm=final[0];
+  if(fm){
+    await drawPlayerCard(ctx,fx,finalY+30,cardW,cardH,fm.athlete_a,null,fm.winner===fm.athlete_a);
+    ctx.fillStyle="#b6ff3d";ctx.font="900 34px Arial";ctx.fillText("X",W/2,finalY+30+cardH/2+8);
+    await drawPlayerCard(ctx,fx+cardW+gapX,finalY+30,cardW,cardH,fm.athlete_b,null,fm.winner===fm.athlete_b);
+  }else{
+    drawTbdCard(ctx,fx,finalY+30,cardW,cardH);
+    ctx.fillStyle="#b6ff3d";ctx.font="900 34px Arial";ctx.fillText("X",W/2,finalY+30+cardH/2+8);
+    drawTbdCard(ctx,fx+cardW+gapX,finalY+30,cardW,cardH,"VENCEDOR");
+  }
+
+  // TROFÉU (desenhado)
+  drawTrophy(ctx,W/2,finalY+250);
+
+  // rodapé
+  ctx.fillStyle="#8ff0b3";ctx.font="800 22px Arial";ctx.textAlign="center";
+  ctx.fillText(`${FULL_MONTH_NAMES[currentMonth-1]}/${currentYear}`,W/2,H-40);
+
+  finishStory("matamata");
+}
+
+function drawTrophy(ctx,cx,cy){
+  ctx.save();
+  ctx.fillStyle="#f2c94c";ctx.strokeStyle="#c99a1e";ctx.lineWidth=3;
+  // taça
+  ctx.beginPath();ctx.moveTo(cx-45,cy-70);ctx.lineTo(cx+45,cy-70);
+  ctx.lineTo(cx+30,cy-10);ctx.quadraticCurveTo(cx,cy+20,cx-30,cy-10);ctx.closePath();ctx.fill();ctx.stroke();
+  // alças
+  ctx.beginPath();ctx.arc(cx-52,cy-55,20,Math.PI*0.4,Math.PI*1.6,false);ctx.stroke();
+  ctx.beginPath();ctx.arc(cx+52,cy-55,20,Math.PI*1.4,Math.PI*0.6,true);ctx.stroke();
+  // haste
+  ctx.fillRect(cx-6,cy-10,12,35);
+  // base
+  ctx.fillRect(cx-30,cy+25,60,14);
+  ctx.fillRect(cx-40,cy+39,80,12);
+  ctx.restore();
 }
 
 // ---------------- READONLY ----------------
 function renderReadonly(){
   document.getElementById("readonlyRules").textContent=rulesTextValue||"Regras ainda não definidas.";
   document.getElementById("readonlyRanking").innerHTML=rankList(computeRanking(scores));
-  renderBracketInto("readonlyBracket",false);
+  const area=document.getElementById("readonlyBracket");
+  if(!bracket.length){area.innerHTML="<p class='smallText'>Mata-mata ainda não gerado neste mês.</p>";return;}
+  // gera a imagem do chaveamento e exibe
+  area.innerHTML='<canvas id="storyCanvas" width="1080" height="1920" style="display:none"></canvas><img id="roBracketImg" class="roBracketImg" alt="Chaveamento">';
+  generateBracketImage().then(()=>{
+    const c=document.getElementById("storyCanvas");
+    document.getElementById("roBracketImg").src=c.toDataURL("image/png");
+  });
 }

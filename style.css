@@ -108,6 +108,7 @@ td.sticky{background:#061334!important}
 /* LIGHTBOX */
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .lightbox img{max-width:100%;max-height:100%;border-radius:16px;border:3px solid #7ee0ff}
+.roBracketImg{width:100%;border-radius:14px;border:1px solid rgba(126,224,255,.3)}
 
 @media(max-width:640px){
   .tabs{grid-template-columns:repeat(4,1fr)}
