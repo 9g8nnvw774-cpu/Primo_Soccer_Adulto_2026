@@ -225,6 +225,23 @@
     <img id="lightboxImg" alt="">
   </div>
 
+  <!-- AJUSTADOR DE FOTO -->
+  <div id="photoAdjuster" class="adjuster hidden">
+    <div class="adjusterBox">
+      <h3>Ajuste o rosto no círculo</h3>
+      <p class="smallText">Arraste a foto e use o controle de zoom para enquadrar o rosto.</p>
+      <div id="adjustStage" class="adjustStage">
+        <canvas id="adjustCanvas" width="320" height="320"></canvas>
+        <div class="adjustMask"></div>
+      </div>
+      <input id="adjustZoom" type="range" min="1" max="4" step="0.01" value="1" class="zoomRange">
+      <div class="adjusterButtons">
+        <button class="danger" id="adjustCancel">Cancelar</button>
+        <button class="success" id="adjustSave">Usar esta foto</button>
+      </div>
+    </div>
+  </div>
+
   <input id="changePhotoInput" type="file" accept="image/*" class="hidden">
 
 </main>

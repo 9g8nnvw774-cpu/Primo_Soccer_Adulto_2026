@@ -155,8 +155,25 @@ function closeLightbox(){document.getElementById("photoLightbox").classList.add(
 
 // ---------------- CADASTRO ----------------
 let pendingPhoto=null;
-function onNewPhotoChosen(e){const f=e.target.files[0];if(!f)return;compressImage(f,320,.72).then(d=>{pendingPhoto=d;document.getElementById("newPhotoPreview").innerHTML=`<img src="${d}" alt="">`;});}
-function compressImage(file,maxSize,q){return new Promise((res,rej)=>{const img=new Image(),r=new FileReader();r.onload=()=>img.src=r.result;r.onerror=rej;img.onload=()=>{const s=Math.min(1,maxSize/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=img.width*s;c.height=img.height*s;c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",q));};img.onerror=rej;r.readAsDataURL(file);});}
+function onNewPhotoChosen(e){const f=e.target.files[0];if(!f)return;compressImage(f,400).then(d=>{pendingPhoto=d;document.getElementById("newPhotoPreview").innerHTML=`<img src="${d}" alt="">`;});}
+function compressImage(file,size,q){return new Promise((res,rej)=>{
+  const img=new Image(),r=new FileReader();
+  r.onload=()=>img.src=r.result;r.onerror=rej;
+  img.onload=()=>{
+    const side=Math.min(img.width,img.height);
+    const sx=(img.width-side)/2, sy=(img.height-side)/2;
+    const c=document.createElement("canvas");
+    c.width=size;c.height=size;
+    const ctx=c.getContext("2d");
+    ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+    ctx.save();
+    ctx.beginPath();ctx.arc(size/2,size/2,size/2,0,Math.PI*2);ctx.closePath();ctx.clip();
+    ctx.drawImage(img,sx,sy,side,side,0,0,size,size);
+    ctx.restore();
+    res(c.toDataURL("image/png"));
+  };
+  img.onerror=rej;r.readAsDataURL(file);
+});}
 async function addAthlete(){
   const name=document.getElementById("newAthleteName").value.trim();
   if(!name)return alert("Digite o nome do atleta.");
@@ -197,7 +214,7 @@ async function onChangePhotoChosen(e){
   const f=e.target.files[0];if(!f)return;
   const id=e.target.dataset.athleteId;
   setSync("Enviando foto...");
-  const dataUrl=await compressImage(f,320,.72);
+  const dataUrl=await compressImage(f,400);
   const{error}=await sb.from("athletes").update({photo_url:dataUrl}).eq("id",id);
   if(error){setSync("Erro ao trocar foto: "+error.message,"error");return;}
   await loadAthletes();renderAthletesTable();setSync("Foto atualizada.","ok");
