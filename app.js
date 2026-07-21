@@ -85,6 +85,7 @@ function wireEvents(){
   document.getElementById("monthSelect").addEventListener("change",onMonthChange);
   document.getElementById("newAthletePhoto").addEventListener("change",onNewPhotoChosen);
   document.getElementById("changePhotoInput").addEventListener("change",onChangePhotoChosen);
+  wireAdjuster();
   document.getElementById("btnAddAthlete").addEventListener("click",addAthlete);
   document.getElementById("scoreSlot").addEventListener("change",renderScorePage);
   document.getElementById("scoreWeek").addEventListener("change",renderScorePage);
@@ -142,10 +143,11 @@ async function loadRules(){const{data,error}=await sb.from("competition_settings
 function athlete(id){return athletes.find(x=>x.id===id);}
 function athleteName(id){const a=athlete(id);return a?a.full_name:"(removido)";}
 function athletePhoto(id){const a=athlete(id);return a?a.photo_url:null;}
+function athletePhotoFull(id){const a=athlete(id);return a?(a.photo_full||a.photo_url):null;}
 function athleteDisplayId(id){const a=athlete(id);return a?("#"+a.display_id):"";}
 function avatarHtml(id){
   const p=athletePhoto(id),n=athleteName(id);
-  return p?`<span class="avatar" onclick="openLightbox('${p}')"><img src="${p}" alt=""></span>`
+  return p?`<span class="avatar" onclick="openLightbox(athletePhotoFull('${id}'))"><img src="${p}" alt=""></span>`
           :`<span class="avatar">${(n||"?").slice(0,2).toUpperCase()}</span>`;
 }
 
@@ -155,32 +157,99 @@ function closeLightbox(){document.getElementById("photoLightbox").classList.add(
 
 // ---------------- CADASTRO ----------------
 let pendingPhoto=null;
-function onNewPhotoChosen(e){const f=e.target.files[0];if(!f)return;compressImage(f,400).then(d=>{pendingPhoto=d;document.getElementById("newPhotoPreview").innerHTML=`<img src="${d}" alt="">`;});}
-function compressImage(file,size,q){return new Promise((res,rej)=>{
-  const img=new Image(),r=new FileReader();
-  r.onload=()=>img.src=r.result;r.onerror=rej;
-  img.onload=()=>{
-    const side=Math.min(img.width,img.height);
-    const sx=(img.width-side)/2, sy=(img.height-side)/2;
-    const c=document.createElement("canvas");
-    c.width=size;c.height=size;
-    const ctx=c.getContext("2d");
-    ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
-    ctx.save();
-    ctx.beginPath();ctx.arc(size/2,size/2,size/2,0,Math.PI*2);ctx.closePath();ctx.clip();
-    ctx.drawImage(img,sx,sy,side,side,0,0,size,size);
-    ctx.restore();
-    res(c.toDataURL("image/png"));
+let pendingPhotoFull=null;
+function onNewPhotoChosen(e){const f=e.target.files[0];if(!f)return;openAdjuster(f,(cropUrl,fullUrl)=>{pendingPhoto=cropUrl;pendingPhotoFull=fullUrl;document.getElementById("newPhotoPreview").innerHTML=`<img src="${cropUrl}" alt="">`;});}
+
+// ===== AJUSTADOR DE FOTO (arrastar + zoom dentro do círculo) =====
+let adj={img:null,scale:1,minScale:1,x:0,y:0,drag:false,lastX:0,lastY:0,onDone:null,size:320,out:400};
+function openAdjuster(file,onDone){
+  const r=new FileReader();
+  r.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      adj.img=img;adj.onDone=onDone;
+      // escala mínima para a imagem cobrir todo o círculo
+      adj.minScale=Math.max(adj.size/img.width,adj.size/img.height);
+      adj.scale=adj.minScale;
+      // centraliza
+      adj.x=(adj.size-img.width*adj.scale)/2;
+      adj.y=(adj.size-img.height*adj.scale)/2;
+      document.getElementById("adjustZoom").min=adj.minScale;
+      document.getElementById("adjustZoom").max=adj.minScale*4;
+      document.getElementById("adjustZoom").value=adj.scale;
+      document.getElementById("photoAdjuster").classList.remove("hidden");
+      drawAdjuster();
+    };
+    img.src=r.result;
   };
-  img.onerror=rej;r.readAsDataURL(file);
-});}
+  r.readAsDataURL(file);
+}
+function drawAdjuster(){
+  const c=document.getElementById("adjustCanvas"),ctx=c.getContext("2d");
+  ctx.clearRect(0,0,adj.size,adj.size);
+  ctx.fillStyle="#000";ctx.fillRect(0,0,adj.size,adj.size);
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+  ctx.drawImage(adj.img,adj.x,adj.y,adj.img.width*adj.scale,adj.img.height*adj.scale);
+}
+function clampAdjuster(){
+  const w=adj.img.width*adj.scale,h=adj.img.height*adj.scale;
+  if(adj.x>0)adj.x=0;if(adj.y>0)adj.y=0;
+  if(adj.x<adj.size-w)adj.x=adj.size-w;
+  if(adj.y<adj.size-h)adj.y=adj.size-h;
+}
+function adjusterPointer(clientX,clientY,type){
+  const stage=document.getElementById("adjustStage").getBoundingClientRect();
+  const px=clientX-stage.left, py=clientY-stage.top;
+  if(type==="down"){adj.drag=true;adj.lastX=px;adj.lastY=py;}
+  else if(type==="move"&&adj.drag){adj.x+=px-adj.lastX;adj.y+=py-adj.lastY;adj.lastX=px;adj.lastY=py;clampAdjuster();drawAdjuster();}
+  else if(type==="up"){adj.drag=false;}
+}
+function wireAdjuster(){
+  const stage=document.getElementById("adjustStage");
+  stage.addEventListener("mousedown",e=>adjusterPointer(e.clientX,e.clientY,"down"));
+  window.addEventListener("mousemove",e=>adjusterPointer(e.clientX,e.clientY,"move"));
+  window.addEventListener("mouseup",e=>adjusterPointer(e.clientX,e.clientY,"up"));
+  stage.addEventListener("touchstart",e=>{const t=e.touches[0];adjusterPointer(t.clientX,t.clientY,"down");},{passive:true});
+  stage.addEventListener("touchmove",e=>{const t=e.touches[0];adjusterPointer(t.clientX,t.clientY,"move");e.preventDefault();},{passive:false});
+  stage.addEventListener("touchend",()=>adjusterPointer(0,0,"up"));
+  document.getElementById("adjustZoom").addEventListener("input",e=>{
+    const cx=adj.size/2,cy=adj.size/2;
+    const ns=Number(e.target.value);
+    // faz o zoom manter o centro do círculo
+    adj.x=cx-(cx-adj.x)*(ns/adj.scale);
+    adj.y=cy-(cy-adj.y)*(ns/adj.scale);
+    adj.scale=ns;clampAdjuster();drawAdjuster();
+  });
+  document.getElementById("adjustCancel").addEventListener("click",()=>{document.getElementById("photoAdjuster").classList.add("hidden");adj.img=null;});
+  document.getElementById("adjustSave").addEventListener("click",()=>{
+    // 1) versão CÍRCULO enquadrado (aparece nas tabelas/ranking/mata-mata)
+    const out=adj.out,ratio=out/adj.size;
+    const c=document.createElement("canvas");c.width=out;c.height=out;
+    const ctx=c.getContext("2d");ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+    ctx.save();ctx.beginPath();ctx.arc(out/2,out/2,out/2,0,Math.PI*2);ctx.closePath();ctx.clip();
+    ctx.drawImage(adj.img,adj.x*ratio,adj.y*ratio,adj.img.width*adj.scale*ratio,adj.img.height*adj.scale*ratio);
+    ctx.restore();
+    const cropUrl=c.toDataURL("image/png");
+    // 2) versão INTEIRA (aparece ao clicar/ampliar), redimensionada para no máx 900px
+    const maxFull=900;
+    const fs=Math.min(1,maxFull/Math.max(adj.img.width,adj.img.height));
+    const fc=document.createElement("canvas");fc.width=adj.img.width*fs;fc.height=adj.img.height*fs;
+    const fctx=fc.getContext("2d");fctx.imageSmoothingEnabled=true;fctx.imageSmoothingQuality="high";
+    fctx.drawImage(adj.img,0,0,fc.width,fc.height);
+    const fullUrl=fc.toDataURL("image/jpeg",0.85);
+    document.getElementById("photoAdjuster").classList.add("hidden");
+    const done=adj.onDone;adj.img=null;
+    if(done)done(cropUrl,fullUrl);
+  });
+}
+
 async function addAthlete(){
   const name=document.getElementById("newAthleteName").value.trim();
   if(!name)return alert("Digite o nome do atleta.");
-  const{error}=await sb.from("athletes").insert({full_name:name,category:"Adulto",photo_url:pendingPhoto,active:true});
+  const{error}=await sb.from("athletes").insert({full_name:name,category:"Adulto",photo_url:pendingPhoto,photo_full:pendingPhotoFull,active:true});
   if(error)return alert("Erro ao cadastrar: "+error.message);
   document.getElementById("newAthleteName").value="";
-  document.getElementById("newPhotoPreview").innerHTML="+ foto";pendingPhoto=null;
+  document.getElementById("newPhotoPreview").innerHTML="+ foto";pendingPhoto=null;pendingPhotoFull=null;
   await loadAthletes();renderAthletesTable();setSync("Atleta cadastrado.","ok");
 }
 async function toggleActive(id,a){await sb.from("athletes").update({active:a}).eq("id",id);await loadAthletes();renderAthletesTable();}
@@ -213,11 +282,12 @@ function changePhoto(id){
 async function onChangePhotoChosen(e){
   const f=e.target.files[0];if(!f)return;
   const id=e.target.dataset.athleteId;
-  setSync("Enviando foto...");
-  const dataUrl=await compressImage(f,400);
-  const{error}=await sb.from("athletes").update({photo_url:dataUrl}).eq("id",id);
-  if(error){setSync("Erro ao trocar foto: "+error.message,"error");return;}
-  await loadAthletes();renderAthletesTable();setSync("Foto atualizada.","ok");
+  openAdjuster(f,async(cropUrl,fullUrl)=>{
+    setSync("Enviando foto...");
+    const{error}=await sb.from("athletes").update({photo_url:cropUrl,photo_full:fullUrl}).eq("id",id);
+    if(error){setSync("Erro ao trocar foto: "+error.message,"error");return;}
+    await loadAthletes();renderAthletesTable();setSync("Foto atualizada.","ok");
+  });
 }
 
 // ---------------- HORÁRIOS + ATLETAS ----------------
@@ -260,7 +330,7 @@ function renderSlotsList(){
         <button class="danger" style="float:right;min-height:30px;padding:2px 10px" onclick="deleteScheduleSlot('${s.id}')">Excluir</button>
       </div>
       ${ids.map(aid=>{const row=slotAthletes.find(x=>x.slot_id===s.id&&x.athlete_id===aid);
-        return `<div class="item"><span class="rankLeft">${avatarHtml(aid)} ${athleteDisplayId(aid)} ${athleteName(aid)}</span>
+        return `<div class="item"><span class="rankLeft">${avatarHtml(aid)} ${athleteName(aid)}</span>
           <button class="danger" onclick="removeAthleteFromSlot('${row.id}')">Tirar</button></div>`;}).join("")||"<p class='smallText'>Nenhum atleta neste horário.</p>"}
       <div class="form form2" style="margin-top:8px">
         <select id="slotpick-${s.id}">${options||'<option value="">Todos já adicionados</option>'}</select>
@@ -278,7 +348,7 @@ function renderAgenda(){
     const ids=slotAthleteIds(s.id);
     const label=s.name+(s.days_of_week?" • "+s.days_of_week:"")+(s.time_label?" • "+s.time_label:"");
     return `<div class="slotCard"><div class="slotTitle">${label} (${ids.length})</div>
-      ${ids.map(aid=>`<div class="item"><span class="rankLeft">${avatarHtml(aid)} ${athleteDisplayId(aid)} ${athleteName(aid)}</span></div>`).join("")||"<p class='smallText'>Nenhum atleta.</p>"}
+      ${ids.map(aid=>`<div class="item"><span class="rankLeft">${avatarHtml(aid)} ${athleteName(aid)}</span></div>`).join("")||"<p class='smallText'>Nenhum atleta.</p>"}
     </div>`;
   }).join("");
 }
@@ -304,7 +374,7 @@ function renderScorePage(){
     const r=scoreRowFor(id,slotId,week)||{pd:0,pe:0,un:0};
     const total=(r.pd||0)+(r.pe||0)+(r.un||0);
     return `<tr>
-      <td class="sticky">${avatarHtml(id)} ${athleteDisplayId(id)} ${athleteName(id)}</td>
+      <td class="sticky">${avatarHtml(id)} ${athleteName(id)}</td>
       <td>${counter(id,"pd",r.pd||0)}</td>
       <td>${counter(id,"pe",r.pe||0)}</td>
       <td>${unBtn(id,r.un||0)}</td>
@@ -323,7 +393,9 @@ function unBtn(id,val){const cls=val===7?"v7":val===5?"v5":"v0";return `<button 
 function fieldVal(id,field){
   const el=document.getElementById(field+"-"+id);
   if(!el)return 0;
-  return Number((el.value!==undefined?el.value:el.textContent)||0);
+  // UN é um <button> (valor no texto); P/D e P/E são <input> (valor em .value)
+  if(field==="un")return Number(el.textContent||0);
+  return Number(el.value||0);
 }
 function readRow(id){
   return{pd:Math.max(0,fieldVal(id,"pd")),pe:Math.max(0,fieldVal(id,"pe")),un:fieldVal(id,"un")};
@@ -475,7 +547,7 @@ function renderBracketInto(elId,isAdmin){
 }
 function teamInner(id,score,seed){
   const p=athletePhoto(id);
-  const img=p?`<img class="bigAvatar" src="${p}" onclick="openLightbox('${p}')">`:`<span class="tbd">${(athleteName(id)||"?").slice(0,1)}</span>`;
+  const img=p?`<img class="bigAvatar" src="${p}" onclick="openLightbox(athletePhotoFull('${id}'))">`:`<span class="tbd">${(athleteName(id)||"?").slice(0,1)}</span>`;
   return `${seed?`<div class="seed">${seed}º</div>`:""}${img}<div class="tname">${athleteName(id)}</div>${score!=null?`<div class="tpts">${score} pts</div>`:""}`;
 }
 
