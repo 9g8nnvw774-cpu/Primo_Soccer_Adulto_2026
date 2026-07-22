@@ -42,7 +42,6 @@ async function init() {
     document.getElementById("tabs").classList.add("hidden");
     document.getElementById("monthSelect").classList.add("hidden");
     document.getElementById("readonlyLogo").src = window.PRIMO_CONFIG.logo;
-    document.getElementById("readonlyHero").style.backgroundImage = coverBg;
     document.getElementById("readonlySub").textContent = "MÊS: " + FULL_MONTH_NAMES[currentMonth - 1].toUpperCase();
     showOnly("page-readonly");
     await Promise.all([loadAthletes(), loadScores(), loadBracket(), loadScheduleSlots(), loadSlotAthletes(), loadRules()]);
