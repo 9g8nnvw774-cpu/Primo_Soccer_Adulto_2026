@@ -110,21 +110,42 @@ td.sticky{background:#061334!important}
 .lightbox img{max-width:100%;max-height:100%;border-radius:16px;border:3px solid #7ee0ff}
 .roBracketImg{width:100%;border-radius:14px;border:1px solid rgba(126,224,255,.3)}
 
-/* LINK DOS ATLETAS — moldura de vidro */
+/* LINK DOS ATLETAS — arte estilizada */
 #page-readonly{padding:0}
-.glassWrap{max-width:640px;margin:0 auto;padding:18px 16px 60px}
+.glassWrap{max-width:560px;margin:0 auto;padding:24px 16px 60px}
 .glassMonth{display:none}
+
+.artHeader{text-align:center;padding:6px 0 18px}
+.artLogo{width:130px;height:130px;object-fit:contain;filter:drop-shadow(0 4px 20px rgba(40,120,255,.55))}
+.artTitle{font-family:'Oswald',sans-serif;font-weight:700;font-size:66px;line-height:.92;color:#eaf2ff;letter-spacing:2px;
+  text-shadow:0 0 2px #0a2a6a,0 3px 0 #0a2a6a,0 0 22px rgba(40,120,255,.7);margin-top:6px}
+.artSubtitle{font-family:'Oswald',sans-serif;font-weight:600;font-size:26px;letter-spacing:12px;color:#dbeafe;margin-top:8px}
+.artSubtitle span{color:#3f7bd6;margin:0 6px}
+.artYear{font-family:'Oswald',sans-serif;font-weight:600;font-size:36px;letter-spacing:14px;color:#eaf2ff;text-shadow:0 0 16px rgba(40,120,255,.6);margin-top:2px}
+.artMonthBox{font-family:'Oswald',sans-serif;font-weight:600;font-size:30px;letter-spacing:2px;color:#eaf2ff;
+  border:2px solid #2f7bff;border-radius:16px;padding:12px 10px;margin:16px auto 0;max-width:360px;
+  box-shadow:0 0 22px rgba(47,123,255,.55),inset 0 0 18px rgba(47,123,255,.25)}
+
 .glassPanel{
   background:linear-gradient(180deg,rgba(18,40,90,.55),rgba(4,12,32,.72));
   border:1.5px solid rgba(120,180,255,.55);
-  border-radius:26px;
-  padding:18px 16px;
+  border-radius:26px;padding:20px 16px;margin-top:18px;
   box-shadow:0 0 40px rgba(40,110,255,.28), inset 0 0 40px rgba(80,150,255,.12);
   backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-.glassSection{margin-bottom:22px}
-.glassSection:last-child{margin-bottom:0}
-.glassSection h2{font-size:20px;text-transform:uppercase;color:#8fd0ff;text-align:center;margin:0 0 12px;letter-spacing:1px;text-shadow:0 0 12px rgba(80,150,255,.4)}
-.glassSection .rankRow{background:rgba(255,255,255,.06);border:1px solid rgba(120,180,255,.18)}
+.glassSection{margin-bottom:0}
+.artSectionTitle{font-family:'Oswald',sans-serif;font-weight:700;font-style:italic;font-size:34px;text-align:center;
+  color:#eaf2ff;letter-spacing:1px;text-shadow:0 0 16px rgba(60,140,255,.6);margin-bottom:2px}
+.artSectionSub{font-family:'Oswald',sans-serif;font-weight:500;font-size:18px;letter-spacing:8px;text-align:center;color:#5fa8ff;margin-bottom:16px}
+
+/* linhas de classificação estilo arte */
+#readonlyRanking .rankRow{background:linear-gradient(180deg,rgba(20,45,95,.5),rgba(8,20,45,.6));
+  border:1px solid rgba(120,180,255,.28);border-radius:16px;padding:12px 14px;margin:12px 0;
+  box-shadow:inset 0 0 20px rgba(60,130,255,.1)}
+#readonlyRanking .rankPos{font-family:'Oswald',sans-serif;font-size:26px;color:#eaf2ff;min-width:44px}
+#readonlyRanking .avatar{width:58px;height:58px;border:3px solid #5fa8ff}
+#readonlyRanking .aName{font-family:'Oswald',sans-serif;font-weight:600;font-size:24px;text-transform:uppercase;letter-spacing:.5px}
+#readonlyRanking .rankRow strong{font-family:'Oswald',sans-serif;font-weight:600;font-size:24px;color:#eaf2ff}
+.rulesView{font-family:'Montserrat',sans-serif}
 
 /* AJUSTADOR DE FOTO */
 .adjuster{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:1100;padding:16px}

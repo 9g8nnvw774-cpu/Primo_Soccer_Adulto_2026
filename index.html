@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Primo Soccer League 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -202,20 +205,32 @@
   <!-- LINK SOMENTE LEITURA (atletas) -->
   <section id="page-readonly" class="page hidden">
     <div class="glassWrap">
-      <img id="readonlyLogo" class="hidden" alt="">
-      <div id="readonlySub" class="glassMonth"></div>
+      <div class="artHeader">
+        <img id="readonlyLogo" class="artLogo" alt="Logo">
+        <div class="artTitle">PRIMO<br>SOCCER</div>
+        <div class="artSubtitle"><span>—</span> LEAGUE <span>—</span></div>
+        <div class="artYear">2026</div>
+        <div class="artMonthBox" id="readonlySub">MÊS: JULHO</div>
+      </div>
 
       <div class="glassPanel">
         <div class="glassSection">
-          <h2>Classificação — Maior Pontuador</h2>
+          <div class="artSectionTitle">CLASSIFICAÇÃO GERAL</div>
+          <div class="artSectionSub">MAIOR PONTUADOR</div>
           <div id="readonlyRanking" class="rankList"></div>
         </div>
+      </div>
+
+      <div class="glassPanel">
         <div class="glassSection">
-          <h2>Mata-mata</h2>
+          <div class="artSectionTitle">MATA-MATA</div>
           <div id="readonlyBracket" class="bracketArea"></div>
         </div>
+      </div>
+
+      <div class="glassPanel">
         <div class="glassSection">
-          <h2>Regras da competição</h2>
+          <div class="artSectionTitle">REGRAS DAS COMPETIÇÕES</div>
           <div id="readonlyRules" class="rulesView"></div>
         </div>
       </div>
