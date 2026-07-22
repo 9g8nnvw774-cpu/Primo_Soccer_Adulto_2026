@@ -41,7 +41,14 @@ async function init() {
   if (mode === "aluno") {
     document.getElementById("tabs").classList.add("hidden");
     document.getElementById("monthSelect").classList.add("hidden");
-    document.getElementById("readonlyLogo").src = window.PRIMO_CONFIG.logo;
+    // fundo escuro com brilho cobrindo a tela toda (hero + painel)
+    document.body.style.background = "#02060f url('fundo-atletas.png') no-repeat center top";
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundAttachment = "fixed";
+    const hero = document.getElementById("hero");
+    hero.style.backgroundImage = "none";
+    hero.style.background = "transparent";
+    hero.style.borderBottom = "none";
     document.getElementById("readonlySub").textContent = "MÊS: " + FULL_MONTH_NAMES[currentMonth - 1].toUpperCase();
     showOnly("page-readonly");
     await Promise.all([loadAthletes(), loadScores(), loadBracket(), loadScheduleSlots(), loadSlotAthletes(), loadRules()]);

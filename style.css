@@ -111,15 +111,9 @@ td.sticky{background:#061334!important}
 .roBracketImg{width:100%;border-radius:14px;border:1px solid rgba(126,224,255,.3)}
 
 /* LINK DOS ATLETAS — moldura de vidro */
-#page-readonly{padding:0;min-height:100vh;
-  background:#02060f url('fundo-atletas.png') no-repeat center top;
-  background-size:cover;background-attachment:fixed}
-.glassWrap{max-width:640px;margin:0 auto;padding:24px 16px 60px}
-.glassTop{text-align:center;padding:10px 0 18px}
-.glassLogo{width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 4px 18px rgba(40,120,255,.6))}
-.glassTitle{font-size:34px;font-weight:900;letter-spacing:3px;color:#eaf2ff;text-shadow:0 2px 10px rgba(40,120,255,.6);margin-top:6px}
-.glassSub{font-size:16px;font-weight:800;letter-spacing:8px;color:#7ec8ff;margin-top:2px}
-.glassMonth{font-size:15px;font-weight:800;letter-spacing:1px;color:#b9d6ff;margin-top:8px;text-transform:uppercase}
+#page-readonly{padding:0}
+.glassWrap{max-width:640px;margin:0 auto;padding:18px 16px 60px}
+.glassMonth{display:none}
 .glassPanel{
   background:linear-gradient(180deg,rgba(18,40,90,.55),rgba(4,12,32,.72));
   border:1.5px solid rgba(120,180,255,.55);
