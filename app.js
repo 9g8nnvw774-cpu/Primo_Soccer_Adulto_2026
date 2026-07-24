@@ -611,7 +611,9 @@ async function generateStoryImage(kind){
   try{
     setSync("Gerando imagem...");
     if(kind==="anual"&&(!annualScores||!annualScores.length)){await loadAnnualScores();}
-    const url = (kind==="matamata") ? await generateBracketImage() : await drawRankingStory(kind);
+    const url = (kind==="matamata") ? await generateBracketImage()
+              : (kind==="semanal") ? await drawWeeklyStory()
+              : await drawRankingStory(kind);
     if(!url)throw new Error("imagem vazia");
     finishStory(kind,url);
   }catch(err){
@@ -880,7 +882,7 @@ function finishStory(kind,url){
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 
 // ---- card de atleta no chaveamento (estilo vidro) ----
-async function bracketCard(ctx,x,y,w,h,athleteId,seed,winner){
+async function bracketCard(ctx,x,y,w,h,athleteId,seed,winner,score){
   ctx.save();
   const g=ctx.createLinearGradient(x,y,x+w*0.7,y+h);
   g.addColorStop(0,"rgba(30,70,130,.40)");
@@ -911,9 +913,15 @@ async function bracketCard(ctx,x,y,w,h,athleteId,seed,winner){
     ctx.fillStyle=gg;ctx.fillText(seed+"º",x+16,y+42);
     ctx.restore();
   }
+  const hasScore = (score!==null && score!==undefined && score!=="");
   ctx.fillStyle=winner?"#ffd76a":"#ffffff";
   ctx.font="700 20px Arial";ctx.textAlign="center";
-  ctx.fillText((athleteName(athleteId)||"").toUpperCase(),cx,y+h-18,w-18);
+  ctx.fillText((athleteName(athleteId)||"").toUpperCase(),cx,y+h-(hasScore?36:18),w-18);
+  if(hasScore){
+    ctx.fillStyle=winner?"#ffd76a":"#9fd0ff";
+    ctx.font="900 22px Arial";
+    ctx.fillText(String(score)+" pts",cx,y+h-12);
+  }
 }
 
 function bracketTbd(ctx,x,y,w,h,label){
@@ -1006,9 +1014,9 @@ async function generateBracketImage(){
     const y = rowsY[rowIdx];
     ctx.textAlign="center";ctx.fillStyle="#dce9fa";ctx.font="700 22px Arial";
     ctx.fillText("QUARTAS #"+(i+1),(x0+x1+cardW)/2,y-14);
-    await bracketCard(ctx,x0,y,cardW,cardH,m.athlete_a,seedOf[m.athlete_a],m.winner===m.athlete_a);
+    await bracketCard(ctx,x0,y,cardW,cardH,m.athlete_a,seedOf[m.athlete_a],m.winner===m.athlete_a,m.score_a);
     goldX(ctx,(x0+cardW+x1)/2,y+cardH/2+12);
-    await bracketCard(ctx,x1,y,cardW,cardH,m.athlete_b,seedOf[m.athlete_b],m.winner===m.athlete_b);
+    await bracketCard(ctx,x1,y,cardW,cardH,m.athlete_b,seedOf[m.athlete_b],m.winner===m.athlete_b,m.score_b);
   }
 
   // ---------- painel SEMI ----------
@@ -1022,9 +1030,9 @@ async function generateBracketImage(){
     ctx.fillText("SEMI #"+(i+1),(x0+x1+cardW)/2,semiY-12);
     const m=semi[i];
     if(m){
-      await bracketCard(ctx,x0,semiY,cardW,sCardH,m.athlete_a,null,m.winner===m.athlete_a);
+      await bracketCard(ctx,x0,semiY,cardW,sCardH,m.athlete_a,null,m.winner===m.athlete_a,m.score_a);
       goldX(ctx,(x0+cardW+x1)/2,semiY+sCardH/2+12);
-      await bracketCard(ctx,x1,semiY,cardW,sCardH,m.athlete_b,null,m.winner===m.athlete_b);
+      await bracketCard(ctx,x1,semiY,cardW,sCardH,m.athlete_b,null,m.winner===m.athlete_b,m.score_b);
     }else{
       bracketTbd(ctx,x0,semiY,cardW,sCardH);
       goldX(ctx,(x0+cardW+x1)/2,semiY+sCardH/2+12);
@@ -1044,8 +1052,8 @@ async function generateBracketImage(){
   const fx0=W/2-cardW-30, fx1=W/2+30;
   const fm=final[0];
   if(fm){
-    await bracketCard(ctx,fx0,fY,cardW,fCardH,fm.athlete_a,null,fm.winner===fm.athlete_a);
-    await bracketCard(ctx,fx1,fY,cardW,fCardH,fm.athlete_b,null,fm.winner===fm.athlete_b);
+    await bracketCard(ctx,fx0,fY,cardW,fCardH,fm.athlete_a,null,fm.winner===fm.athlete_a,fm.score_a);
+    await bracketCard(ctx,fx1,fY,cardW,fCardH,fm.athlete_b,null,fm.winner===fm.athlete_b,fm.score_b);
   }else{
     bracketTbd(ctx,fx0,fY,cardW,fCardH,"A DEFINIR");
     bracketTbd(ctx,fx1,fY,cardW,fCardH,"VENCEDOR");
@@ -1132,4 +1140,129 @@ function showSaveBox(container,url,label){
     <a class="success storyDownloadBtn" href="${url}" download="primo-${label.toLowerCase()}-${currentYear}-${currentMonth}.png">Baixar ${label}</a>
     <p class="smallText" style="text-align:center;margin-top:6px">No iPhone: toque e segure na imagem e escolha "Salvar em Fotos".</p>`;
   container.appendChild(box);
+}
+
+// ---------------- IMAGEM: PONTUAÇÃO POR SEMANA ----------------
+async function drawWeeklyStory(){
+  const S=2, W=1080, H=1920;
+  const c=document.createElement("canvas");
+  c.width=W*S;c.height=H*S;
+  const ctx=c.getContext("2d");
+  ctx.scale(S,S);
+
+  // dados: pontos por semana (1..5) de cada atleta
+  const per={};
+  scores.forEach(s=>{
+    if(!per[s.athlete_id])per[s.athlete_id]=[0,0,0,0,0];
+    const wk=Number(s.week);
+    if(wk>=1&&wk<=5)per[s.athlete_id][wk-1]+=s.points;
+  });
+  let rows=athletes.filter(a=>a.active).map(a=>{
+    const w=per[a.id]||[0,0,0,0,0];
+    return {id:a.id,name:a.full_name,w,total:w.reduce((x,y)=>x+y,0)};
+  });
+  rows.sort((a,b)=>(b.total-a.total)||a.name.localeCompare(b.name));
+
+  cleanBackground(ctx,W,H);
+
+  // cabecalho
+  const titleY=112;
+  chromeText(ctx,"PRIMO SOCCER",W/2,titleY,"900 76px Arial");
+  try{
+    const logo=await loadImage(window.PRIMO_CONFIG.logo);
+    ctx.drawImage(logo,44,34,124,124);
+    ctx.drawImage(logo,W-168,34,124,124);
+  }catch(e){}
+  ctx.fillStyle="#5aa8ff";ctx.font="700 30px Arial";ctx.textAlign="center";
+  ctx.fillText("L E A G U E   2 0 2 6",W/2,titleY+46);
+  neonLine(ctx,170,titleY+36,268,titleY+36);
+  neonLine(ctx,W-268,titleY+36,W-170,titleY+36);
+  neonPill(ctx,W/2-225,titleY+72,450,62,"MÊS: "+FULL_MONTH_NAMES[currentMonth-1].toUpperCase(),"700 36px Arial");
+
+  // rodape: agradecimento + patrocinadores
+  let sponsorTop=H-40;
+  try{
+    const sp=await loadImage("patrocinadores.png");
+    const spW=Math.min(1000,W-70), spH=sp.height*(spW/sp.width);
+    sponsorTop=H-30-spH;
+    ctx.drawImage(sp,W/2-spW/2,sponsorTop,spW,spH);
+  }catch(e){ sponsorTop=H-40; }
+  const agradY=sponsorTop-22;
+  ctx.fillStyle="#cfe2f7";ctx.font="700 26px Arial";ctx.textAlign="center";
+  ctx.letterSpacing="6px";ctx.fillText("AGRADECIMENTO",W/2,agradY);ctx.letterSpacing="0px";
+
+  // painel
+  const inX=34, inY=titleY+156, inW=W-68, inH=(agradY-46)-inY;
+  glassPanel(ctx,inX,inY,inW,inH,26);
+  chromeText(ctx,"PONTUAÇÃO POR SEMANA",W/2,inY+58,"italic 900 46px Arial");
+
+  if(!rows.length){
+    ctx.fillStyle="#cfe0f5";ctx.font="700 30px Arial";ctx.textAlign="center";
+    ctx.fillText("Nenhum atleta cadastrado.",W/2,inY+180);
+    return c.toDataURL("image/png");
+  }
+
+  // colunas
+  const tblX=inX+16, tblW=inW-32;
+  const totalW=118, weekW=78, nameW=tblW-totalW-weekW*5;
+  const colX=[tblX];                       // inicio nome
+  for(let i=0;i<5;i++)colX.push(tblX+nameW+i*weekW);
+  colX.push(tblX+nameW+5*weekW);           // inicio total
+
+  // cabecalho da tabela
+  const headY=inY+92, headH=42;
+  ctx.fillStyle="rgba(20,52,102,.55)";
+  roundRect(ctx,tblX,headY,tblW,headH,10);ctx.fill();
+  ctx.strokeStyle="rgba(120,200,255,.8)";ctx.lineWidth=1.6;
+  roundRect(ctx,tblX,headY,tblW,headH,10);ctx.stroke();
+  ctx.fillStyle="#9fd0ff";ctx.font="700 20px Arial";
+  ctx.textAlign="left";ctx.fillText("ATLETA",colX[0]+14,headY+28);
+  ctx.textAlign="center";
+  for(let i=0;i<5;i++)ctx.fillText((i+1)+"ª",colX[1+i]+weekW/2,headY+28);
+  ctx.fillStyle="#ffd76a";ctx.fillText("TOTAL",colX[6]+totalW/2,headY+28);
+
+  // linhas
+  const listTop=headY+headH+8, listBottom=inY+inH-18;
+  const avail=listBottom-listTop, gap=4;
+  let rowH=Math.min(52,Math.floor(avail/rows.length));
+  if(rowH<20)rowH=20;
+  const shown=rows.slice(0,Math.floor(avail/rowH));
+  const barH=rowH-gap;
+  const fs=Math.max(13,Math.min(23,Math.round(barH*0.50)));
+  const medals=["#ffd76a","#eef4fb","#e79b57"];
+
+  for(let i=0;i<shown.length;i++){
+    const r=shown[i], y=listTop+i*rowH, m=i<3?medals[i]:null;
+    ctx.fillStyle=i%2?"rgba(8,18,38,.85)":"rgba(12,26,50,.85)";
+    roundRect(ctx,tblX,y,tblW,barH,8);ctx.fill();
+    ctx.strokeStyle=m?m:"rgba(95,165,240,.5)";
+    ctx.lineWidth=m?2:1.1;
+    roundRect(ctx,tblX,y,tblW,barH,8);ctx.stroke();
+    const cy=y+barH/2+fs*0.35;
+    // posicao + nome
+    ctx.textAlign="left";ctx.fillStyle=m?m:"#e8f1ff";
+    ctx.font=`700 ${fs}px Arial`;
+    ctx.fillText((i+1)+"º",colX[0]+10,cy);
+    ctx.fillStyle="#ffffff";
+    ctx.fillText(r.name.toUpperCase(),colX[0]+56,cy,nameW-66);
+    // semanas
+    ctx.textAlign="center";
+    for(let k=0;k<5;k++){
+      const v=r.w[k];
+      ctx.fillStyle=v?"#d8e8fb":"#5b7a9c";
+      ctx.font=`700 ${fs}px Arial`;
+      ctx.fillText(String(v),colX[1+k]+weekW/2,cy);
+    }
+    // total
+    ctx.fillStyle=m?m:"#ffd76a";
+    ctx.font=`900 ${fs}px Arial`;
+    ctx.fillText(String(r.total),colX[6]+totalW/2,cy);
+  }
+
+  if(shown.length<rows.length){
+    ctx.textAlign="center";ctx.fillStyle="#9dbde0";ctx.font="700 19px Arial";
+    ctx.fillText("+"+(rows.length-shown.length)+" atletas",W/2,listBottom+16);
+  }
+  ctx.textAlign="center";
+  return c.toDataURL("image/png");
 }

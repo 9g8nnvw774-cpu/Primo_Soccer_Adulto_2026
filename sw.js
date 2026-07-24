@@ -1,4 +1,4 @@
-const CACHE_NAME = "primo-soccer-v3-18";
+const CACHE_NAME = "primo-soccer-v3-19";
 const CORE_FILES = ["./", "index.html", "style.css", "app.js", "config.js", "manifest.json"];
 
 self.addEventListener("install", (event) => {
