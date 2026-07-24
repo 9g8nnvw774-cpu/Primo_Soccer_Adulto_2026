@@ -622,109 +622,221 @@ async function generateStoryImage(kind){
 }
 
 async function drawRankingStory(kind){
-  const c=document.createElement("canvas");c.width=1080;c.height=1920;
-  const ctx=c.getContext("2d"),W=c.width,H=c.height;
+  const S=2;                       // fator de alta resolucao (HD)
+  const W=1080,H=1920;
+  const c=document.createElement("canvas");
+  c.width=W*S;c.height=H*S;
+  const ctx=c.getContext("2d");
+  ctx.scale(S,S);
+  ctx.textBaseline="alphabetic";
 
-  // fundo escuro com brilho (igual ao link)
-  ctx.fillStyle="#02060f";ctx.fillRect(0,0,W,H);
-  const glow=ctx.createRadialGradient(W/2,340,60,W/2,340,820);
-  glow.addColorStop(0,"rgba(22,64,140,.55)");glow.addColorStop(1,"rgba(2,6,15,0)");
-  ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
-
-  // dados
+  // ---------- dados ----------
   let rows=[],subtitle="";
-  if(kind==="ranking"){
-    subtitle="MAIOR PONTUADOR";
-    rows=computeRanking(scores).map((r,i)=>({pos:i+1,id:r.athlete_id,name:athleteName(r.athlete_id),pts:r.points}));
-  }else{
-    subtitle="RANKING ANUAL "+currentYear;
+  if(kind==="anual"){
+    subtitle="MAIOR PONTUADOR DO ANO";
     const t={};annualScores.forEach(s=>t[s.athlete_id]=(t[s.athlete_id]||0)+s.points);
-    rows=Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([id,p],i)=>({pos:i+1,id,name:athleteName(id),pts:p}));
+    rows=athletes.filter(a=>a.active).map(a=>({id:a.id,name:a.full_name,pts:t[a.id]||0}));
+  }else{
+    subtitle="MAIOR PONTUADOR";
+    const t={};scores.forEach(s=>t[s.athlete_id]=(t[s.athlete_id]||0)+s.points);
+    rows=athletes.filter(a=>a.active).map(a=>({id:a.id,name:a.full_name,pts:t[a.id]||0}));
   }
+  rows.sort((a,b)=>b.pts-a.pts||a.name.localeCompare(b.name));
+  rows.forEach((r,i)=>r.pos=i+1);
 
-  // cabeçalho
-  ctx.textAlign="center";
-  try{const logo=await loadImage(window.PRIMO_CONFIG.logo);ctx.drawImage(logo,W/2-105,40,210,210);}catch(e){}
-  ctx.fillStyle="#eaf2ff";
-  ctx.font="900 96px Arial";
-  ctx.shadowColor="rgba(40,120,255,.8)";ctx.shadowBlur=26;
-  ctx.fillText("PRIMO SOCCER",W/2,330);
-  ctx.shadowBlur=0;
-  ctx.font="700 40px Arial";ctx.fillStyle="#dbeafe";
-  ctx.fillText("L E A G U E   "+currentYear,W/2,388);
-  // caixa do mês
-  ctx.strokeStyle="#2f7bff";ctx.lineWidth=4;
-  roundRect(ctx,W/2-260,415,520,80,18);ctx.stroke();
-  ctx.fillStyle="#eaf2ff";ctx.font="800 44px Arial";
-  ctx.fillText("MÊS: "+FULL_MONTH_NAMES[currentMonth-1].toUpperCase(),W/2,470);
+  // ---------- fundo ----------
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,"#071426");bg.addColorStop(.5,"#040c1a");bg.addColorStop(1,"#020610");
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // faixas diagonais de luz
+  ctx.save();ctx.globalCompositeOperation="lighter";
+  const streaks=[[-140,.20],[80,.12],[900,.16],[1120,.10]];
+  streaks.forEach(([x,alpha])=>{
+    const g=ctx.createLinearGradient(x,0,x+320,H);
+    g.addColorStop(0,"rgba(40,120,220,0)");
+    g.addColorStop(.5,"rgba(60,150,255,"+alpha+")");
+    g.addColorStop(1,"rgba(40,120,220,0)");
+    ctx.fillStyle=g;
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+230,0);ctx.lineTo(x+540,H);ctx.lineTo(x+310,H);ctx.closePath();ctx.fill();
+  });
+  ctx.restore();
+  // brilho central superior
+  const halo=ctx.createRadialGradient(W/2,240,20,W/2,240,700);
+  halo.addColorStop(0,"rgba(60,150,255,.28)");halo.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=halo;ctx.fillRect(0,0,W,620);
+  // favo de mel discreto no rodape
+  ctx.save();ctx.globalAlpha=.10;ctx.strokeStyle="#4aa3ff";ctx.lineWidth=1.2;
+  for(let hy=H-260;hy<H;hy+=26){
+    for(let hx=(hy/26)%2?0:16;hx<W;hx+=32){
+      ctx.beginPath();
+      for(let k=0;k<6;k++){
+        const ang=Math.PI/3*k-Math.PI/6, px=hx+14*Math.cos(ang), py=hy+14*Math.sin(ang);
+        k?ctx.lineTo(px,py):ctx.moveTo(px,py);
+      }
+      ctx.closePath();ctx.stroke();
+    }
+  }
+  ctx.restore();
 
-  // painel
-  const panelTop=530, panelBottom=H-70;
-  ctx.fillStyle="rgba(10,26,58,.55)";
-  roundRect(ctx,40,panelTop,W-80,panelBottom-panelTop,28);ctx.fill();
-  ctx.strokeStyle="rgba(120,180,255,.5)";ctx.lineWidth=3;
-  roundRect(ctx,40,panelTop,W-80,panelBottom-panelTop,28);ctx.stroke();
+  // ---------- logo + estrelas ----------
+  try{
+    const logo=await loadImage(window.PRIMO_CONFIG.logo);
+    const lw=170,lh=170;
+    ctx.drawImage(logo,W/2-lw/2,18,lw,lh);
+  }catch(e){}
+  ctx.fillStyle="#dfe9f7";ctx.textAlign="center";ctx.font="700 20px Arial";
+  ctx.fillText("★ ★ ★ ★ ★",W/2,26);
 
-  ctx.fillStyle="#eaf2ff";ctx.font="italic 900 58px Arial";
-  ctx.fillText("CLASSIFICAÇÃO GERAL",W/2,panelTop+70);
-  ctx.fillStyle="#5fa8ff";ctx.font="700 28px Arial";
-  ctx.fillText(subtitle,W/2,panelTop+112);
+  // ---------- painel externo (vidro) ----------
+  glassPanel(ctx,42,206,W-84,H-248,30);
+
+  // ---------- titulo metalico ----------
+  metallicText(ctx,"PRIMO SOCCER",W/2,300,"900 84px Arial",1.5);
+  // linha LEAGUE 2026
+  ctx.textAlign="center";ctx.fillStyle="#4d9bff";ctx.font="700 34px Arial";
+  ctx.fillText("L E A G U E   2 0 2 6",W/2,350);
+  ctx.strokeStyle="#2f7bff";ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(150,340);ctx.lineTo(255,340);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(W-255,340);ctx.lineTo(W-150,340);ctx.stroke();
+
+  // ---------- pilula do mes ----------
+  const pillW=470,pillH=68,pillX=W/2-pillW/2,pillY=372;
+  ctx.save();
+  ctx.shadowColor="rgba(60,150,255,.85)";ctx.shadowBlur=26;
+  ctx.strokeStyle="#5fb0ff";ctx.lineWidth=3.5;
+  roundRect(ctx,pillX,pillY,pillW,pillH,pillH/2);ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle="#eef5ff";ctx.font="700 40px Arial";ctx.textAlign="center";
+  ctx.fillText("MÊS: "+FULL_MONTH_NAMES[currentMonth-1].toUpperCase(),W/2,pillY+47);
+
+  // ---------- painel interno ----------
+  const inX=64,inY=468,inW=W-128,inH=H-inY-72;
+  glassPanel(ctx,inX,inY,inW,inH,26);
+
+  metallicText(ctx,"CLASSIFICAÇÃO GERAL",W/2,inY+68,"italic 900 56px Arial",1.2);
+  ctx.fillStyle="#4d9bff";ctx.font="700 26px Arial";ctx.textAlign="center";
+  ctx.fillText(subtitle.split("").join(" "),W/2,inY+108);
 
   if(!rows.length){
-    ctx.fillStyle="#dbeafe";ctx.font="700 34px Arial";
-    ctx.fillText("Sem pontuação lançada ainda.",W/2,panelTop+220);
+    ctx.fillStyle="#cfe0f5";ctx.font="700 30px Arial";
+    ctx.fillText("Nenhum atleta cadastrado.",W/2,inY+200);
     return c.toDataURL("image/png");
   }
 
-  // calcula altura de cada linha para caber TODOS os atletas
-  const listTop=panelTop+150, listBottom=panelBottom-30;
+  // ---------- linhas ----------
+  const listTop=inY+132, listBottom=inY+inH-24;
   const avail=listBottom-listTop;
-  let rowH=Math.min(112,Math.floor(avail/rows.length));
-  if(rowH<44)rowH=44; // mínimo legível
-  const maxRows=Math.floor(avail/rowH);
-  const shown=rows.slice(0,maxRows);
-  const photoR=Math.min(34,Math.floor(rowH*0.36));
-  const fontSize=Math.max(20,Math.min(38,Math.floor(rowH*0.38)));
+  const gap=5;
+  let rowH=Math.min(62,Math.floor(avail/rows.length));
+  if(rowH<26)rowH=26;
+  const shown=rows.slice(0,Math.floor(avail/rowH));
+  const barH=rowH-gap;
+  const fs=Math.max(15,Math.min(27,Math.round(barH*0.52)));
+  const pr=Math.max(11,Math.min(20,Math.round(barH*0.40)));
+  const rowX=inX+22, rowW=inW-44;
 
   const medals=[
-    {bg:"rgba(120,95,20,.55)",border:"#ffd76a",text:"#ffd76a"},
-    {bg:"rgba(95,105,120,.5)",border:"#d7e2ee",text:"#e8f0f8"},
-    {bg:"rgba(110,68,32,.5)",border:"#e09a5a",text:"#f0b17a"}
+    {a:"#7a5a12",b:"#d9a927",edge:"#ffd76a",txt:"#ffd76a"},
+    {a:"#5d6672",b:"#aab6c4",edge:"#e3ecf6",txt:"#ffffff"},
+    {a:"#6b3d1c",b:"#c07434",edge:"#e79b57",txt:"#f3b077"}
   ];
 
   for(let i=0;i<shown.length;i++){
-    const r=shown[i];
-    const y=listTop+i*rowH;
-    const h=rowH-8;
-    const m=i<3?medals[i]:null;
-    // fundo da linha
-    ctx.fillStyle=m?m.bg:"rgba(20,45,95,.45)";
-    roundRect(ctx,70,y,W-140,h,14);ctx.fill();
-    ctx.strokeStyle=m?m.border:"rgba(120,180,255,.28)";ctx.lineWidth=m?3:1.5;
-    roundRect(ctx,70,y,W-140,h,14);ctx.stroke();
-    // posição
-    ctx.textAlign="left";ctx.fillStyle=m?m.text:"#eaf2ff";
-    ctx.font=`700 ${fontSize}px Arial`;
-    ctx.fillText(r.pos+"º",96,y+h/2+fontSize*0.35);
-    // foto redonda
-    const cx=180,cy=y+h/2;
+    const r=shown[i], y=listTop+i*rowH, m=i<3?medals[i]:null;
+    // fundo da barra
+    if(m){
+      const g=ctx.createLinearGradient(rowX,y,rowX+rowW,y+barH);
+      g.addColorStop(0,"rgba(10,18,34,.92)");
+      g.addColorStop(.5,hexA(m.a,.55));
+      g.addColorStop(1,hexA(m.b,.35));
+      ctx.fillStyle=g;
+    }else{
+      const g=ctx.createLinearGradient(rowX,y,rowX,y+barH);
+      g.addColorStop(0,"rgba(14,26,48,.85)");
+      g.addColorStop(1,"rgba(7,15,30,.9)");
+      ctx.fillStyle=g;
+    }
+    roundRect(ctx,rowX,y,rowW,barH,barH/2);ctx.fill();
+    ctx.strokeStyle=m?m.edge:"rgba(90,150,220,.55)";
+    ctx.lineWidth=m?2.4:1.4;
+    roundRect(ctx,rowX,y,rowW,barH,barH/2);ctx.stroke();
+
+    const cy=y+barH/2;
+    // posicao
+    ctx.textAlign="right";ctx.fillStyle=m?m.txt:"#e8f1ff";
+    ctx.font=`700 ${fs}px Arial`;
+    ctx.fillText(r.pos+"º",rowX+58,cy+fs*0.35);
+    // foto
+    const cx=rowX+58+10+pr;
     const photo=athletePhoto(r.id);
-    ctx.save();ctx.beginPath();ctx.arc(cx,cy,photoR,0,Math.PI*2);ctx.closePath();ctx.clip();
-    if(photo){try{const img=await loadImage(photo);ctx.drawImage(img,cx-photoR,cy-photoR,photoR*2,photoR*2);}catch(e){ctx.fillStyle="#061334";ctx.fillRect(cx-photoR,cy-photoR,photoR*2,photoR*2);}}
-    else{ctx.fillStyle="#061334";ctx.fillRect(cx-photoR,cy-photoR,photoR*2,photoR*2);}
+    ctx.save();ctx.beginPath();ctx.arc(cx,cy,pr,0,Math.PI*2);ctx.closePath();ctx.clip();
+    if(photo){try{const img=await loadImage(photo);ctx.drawImage(img,cx-pr,cy-pr,pr*2,pr*2);}catch(e){ctx.fillStyle="#0a1830";ctx.fillRect(cx-pr,cy-pr,pr*2,pr*2);}}
+    else{ctx.fillStyle="#0a1830";ctx.fillRect(cx-pr,cy-pr,pr*2,pr*2);}
     ctx.restore();
-    ctx.beginPath();ctx.arc(cx,cy,photoR,0,Math.PI*2);
-    ctx.lineWidth=3;ctx.strokeStyle=m?m.border:"#5fa8ff";ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,pr,0,Math.PI*2);
+    ctx.lineWidth=2;ctx.strokeStyle=m?m.edge:"#4d9bff";ctx.stroke();
     // nome
-    ctx.fillStyle="#fff";ctx.font=`700 ${fontSize}px Arial`;ctx.textAlign="left";
-    ctx.fillText(r.name.toUpperCase(),cx+photoR+22,cy+fontSize*0.35,W-560);
+    ctx.textAlign="left";ctx.fillStyle="#ffffff";
+    ctx.font=`700 ${fs}px Arial`;
+    const nameX=cx+pr+16, ptsW=150;
+    ctx.fillText(r.name.toUpperCase(),nameX,cy+fs*0.35,rowW-(nameX-rowX)-ptsW);
     // pontos
-    ctx.textAlign="right";ctx.fillStyle=m?m.text:"#eaf2ff";
-    ctx.font=`700 ${fontSize}px Arial`;
-    ctx.fillText(r.pts+" pts",W-96,cy+fontSize*0.35);
+    ctx.textAlign="right";ctx.fillStyle=m?m.txt:"#ffffff";
+    ctx.font=`700 ${fs}px Arial`;
+    const ptsTxt=r.pts+" pts";
+    ctx.fillText(ptsTxt,rowX+rowW-24,cy+fs*0.35);
   }
+
+  if(shown.length<rows.length){
+    ctx.textAlign="center";ctx.fillStyle="#9dbde0";ctx.font="700 20px Arial";
+    ctx.fillText("+"+(rows.length-shown.length)+" atletas",W/2,listBottom+18);
+  }
+
   ctx.textAlign="center";
   return c.toDataURL("image/png");
+}
+
+// painel de vidro com brilho
+function glassPanel(ctx,x,y,w,h,r){
+  ctx.save();
+  const g=ctx.createLinearGradient(x,y,x,y+h);
+  g.addColorStop(0,"rgba(28,60,110,.42)");
+  g.addColorStop(.5,"rgba(10,26,52,.34)");
+  g.addColorStop(1,"rgba(5,14,30,.5)");
+  ctx.fillStyle=g;
+  roundRect(ctx,x,y,w,h,r);ctx.fill();
+  ctx.shadowColor="rgba(70,160,255,.75)";ctx.shadowBlur=24;
+  ctx.strokeStyle="rgba(120,190,255,.95)";ctx.lineWidth=3;
+  roundRect(ctx,x,y,w,h,r);ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle="rgba(255,255,255,.28)";ctx.lineWidth=1.2;
+  roundRect(ctx,x+6,y+6,w-12,h-12,r-5);ctx.stroke();
+  ctx.restore();
+}
+
+// texto metalico (cromado)
+function metallicText(ctx,text,x,y,font,strokeW){
+  ctx.save();
+  ctx.font=font;ctx.textAlign="center";
+  const m=ctx.measureText(text);
+  const asc=parseInt(font.match(/(\d+)px/)[1],10);
+  const g=ctx.createLinearGradient(0,y-asc*0.85,0,y+asc*0.15);
+  g.addColorStop(0,"#ffffff");
+  g.addColorStop(.35,"#cfdcec");
+  g.addColorStop(.52,"#7d8fa6");
+  g.addColorStop(.62,"#e9f2ff");
+  g.addColorStop(1,"#9fb2c8");
+  ctx.shadowColor="rgba(60,150,255,.55)";ctx.shadowBlur=18;
+  ctx.fillStyle=g;ctx.fillText(text,x,y);
+  ctx.shadowBlur=0;
+  ctx.lineWidth=strokeW||1.5;ctx.strokeStyle="rgba(10,30,60,.85)";
+  ctx.strokeText(text,x,y);
+  ctx.restore();
+}
+
+function hexA(hex,a){
+  const n=parseInt(hex.slice(1),16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
 }
 
 function finishStory(kind,url){
