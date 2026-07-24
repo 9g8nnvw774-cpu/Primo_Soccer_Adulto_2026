@@ -54,8 +54,8 @@ tbody tr:nth-child(even){background:#05194d}
 .sticky{position:sticky;left:0;background:#071c47!important;z-index:3;min-width:150px;text-align:left}
 td.sticky{background:#061334!important}
 
-.avatar{width:40px;height:40px;border-radius:50%;border:2px solid #7ee0ff;background:#061334;display:inline-grid;place-items:center;color:#7ee0ff;font-weight:900;overflow:hidden;font-size:11px;text-align:center;cursor:pointer}
-.avatar img{width:100%;height:100%;object-fit:cover}
+.avatar{width:40px;height:40px;min-width:40px;min-height:40px;flex-shrink:0;border-radius:50%;border:2px solid #7ee0ff;background:#061334;display:inline-grid;place-items:center;color:#7ee0ff;font-weight:900;overflow:hidden;font-size:11px;text-align:center;cursor:pointer}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .photoLabel{display:flex;align-items:center;gap:8px;cursor:pointer}
 .idTag{color:#7ee0ff;font-weight:900}
 
@@ -139,12 +139,28 @@ td.sticky{background:#061334!important}
 
 /* linhas de classificação estilo arte */
 #readonlyRanking .rankRow{background:linear-gradient(180deg,rgba(20,45,95,.5),rgba(8,20,45,.6));
-  border:1px solid rgba(120,180,255,.28);border-radius:16px;padding:12px 14px;margin:12px 0;
+  border:1px solid rgba(120,180,255,.28);border-radius:14px;padding:9px 12px;margin:9px 0;
   box-shadow:inset 0 0 20px rgba(60,130,255,.1)}
-#readonlyRanking .rankPos{font-family:'Oswald',sans-serif;font-size:26px;color:#eaf2ff;min-width:44px}
-#readonlyRanking .avatar{width:58px;height:58px;border:3px solid #5fa8ff}
-#readonlyRanking .aName{font-family:'Oswald',sans-serif;font-weight:600;font-size:24px;text-transform:uppercase;letter-spacing:.5px}
-#readonlyRanking .rankRow strong{font-family:'Oswald',sans-serif;font-weight:600;font-size:24px;color:#eaf2ff}
+#readonlyRanking .rankPos{font-family:'Oswald',sans-serif;font-size:19px;color:#eaf2ff;min-width:34px;flex-shrink:0}
+#readonlyRanking .avatar{width:44px;height:44px;min-width:44px;min-height:44px;flex-shrink:0;border:2px solid #5fa8ff;border-radius:50%;overflow:hidden}
+#readonlyRanking .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+#readonlyRanking .aName{font-family:'Oswald',sans-serif;font-weight:600;font-size:16px;text-transform:uppercase;letter-spacing:.3px}
+#readonlyRanking .rankRow strong{font-family:'Oswald',sans-serif;font-weight:600;font-size:16px;color:#eaf2ff}
+
+/* pódio: ouro, prata, bronze */
+#readonlyRanking .rankRow.pos1{background:linear-gradient(180deg,rgba(120,95,20,.55),rgba(45,32,6,.7));
+  border:1.5px solid #ffd76a;box-shadow:0 0 22px rgba(255,200,80,.35),inset 0 0 22px rgba(255,200,80,.12)}
+#readonlyRanking .rankRow.pos1 .rankPos,#readonlyRanking .rankRow.pos1 strong{color:#ffd76a}
+#readonlyRanking .rankRow.pos1 .avatar{border-color:#ffd76a}
+#readonlyRanking .rankRow.pos2{background:linear-gradient(180deg,rgba(95,105,120,.5),rgba(25,32,45,.7));
+  border:1.5px solid #d7e2ee;box-shadow:0 0 20px rgba(215,226,238,.28),inset 0 0 20px rgba(215,226,238,.1)}
+#readonlyRanking .rankRow.pos2 .rankPos,#readonlyRanking .rankRow.pos2 strong{color:#e8f0f8}
+#readonlyRanking .rankRow.pos2 .avatar{border-color:#d7e2ee}
+#readonlyRanking .rankRow.pos3{background:linear-gradient(180deg,rgba(110,68,32,.5),rgba(40,24,10,.7));
+  border:1.5px solid #e09a5a;box-shadow:0 0 20px rgba(224,154,90,.28),inset 0 0 20px rgba(224,154,90,.1)}
+#readonlyRanking .rankRow.pos3 .rankPos,#readonlyRanking .rankRow.pos3 strong{color:#f0b17a}
+#readonlyRanking .rankRow.pos3 .avatar{border-color:#e09a5a}
+
 .rulesView{font-family:'Montserrat',sans-serif}
 
 /* AJUSTADOR DE FOTO */
