@@ -590,10 +590,22 @@ async function loadHistory(){
 }
 
 // ---------------- IMPRIMIR / STORIES ----------------
-function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.crossOrigin="anonymous";i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
 
 async function generateStoryImage(kind){
-  if(kind==="matamata"){return generateBracketImage();}
+  try{
+    setSync("Gerando imagem...");
+    if(kind==="matamata"){await generateBracketImage();return;}
+    if(kind==="anual"&&(!annualScores||!annualScores.length)){await loadAnnualScores();}
+    await drawRankingStory(kind);
+  }catch(err){
+    console.error(err);
+    setSync("Erro ao gerar imagem: "+(err&&err.message?err.message:err),"error");
+    alert("Não consegui gerar a imagem: "+(err&&err.message?err.message:err));
+  }
+}
+
+async function drawRankingStory(kind){
   const c=document.getElementById("storyCanvas"),ctx=c.getContext("2d"),W=c.width,H=c.height;
 
   // fundo escuro com brilho (igual ao link)
@@ -699,14 +711,19 @@ async function generateStoryImage(kind){
 }
 
 function finishStory(kind){
+  const c=document.getElementById("storyCanvas");
+  if(!c){setSync("Erro: área da imagem não encontrada.","error");return;}
+  let url;
+  try{url=c.toDataURL("image/png");}
+  catch(e){setSync("Erro ao exportar a imagem: "+e.message,"error");alert("Erro ao exportar a imagem: "+e.message);return;}
   const card=document.getElementById("storyPreviewCard");
   if(card)card.style.display="block";
-  const c=document.getElementById("storyCanvas");
-  const url=c.toDataURL("image/png");
   const prev=document.getElementById("storyPreviewImg");
   if(prev)prev.src=url;
   const link=document.getElementById("storyDownload");
   if(link){link.href=url;link.download=`primo-${kind}-${currentYear}-${currentMonth}.png`;}
+  setSync("Imagem gerada. Toque e segure nela para salvar.","ok");
+  if(card&&card.scrollIntoView)setTimeout(()=>card.scrollIntoView({behavior:"smooth",block:"start"}),100);
 }
 
 // desenha um card de atleta no chaveamento
@@ -873,5 +890,8 @@ function renderReadonly(){
   generateBracketImage().then(()=>{
     const c=document.getElementById("storyCanvas");
     document.getElementById("roBracketImg").src=c.toDataURL("image/png");
+  }).catch(err=>{
+    console.error(err);
+    area.innerHTML="<p class='smallText'>Não foi possível carregar o chaveamento.</p>";
   });
 }
