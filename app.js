@@ -23,6 +23,15 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
 
+// torna qualquer erro visível na tela (em vez de falhar em silêncio)
+window.addEventListener("error", (e) => {
+  try{ setSync("Erro: " + (e.message || "desconhecido"), "error"); }catch(_){}
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const m = e && e.reason && e.reason.message ? e.reason.message : e.reason;
+  try{ setSync("Erro: " + m, "error"); }catch(_){}
+});
+
 async function init() {
   const params = new URLSearchParams(location.search);
   mode = params.get("aluno") ? "aluno" : "admin";  // link de pais removido
@@ -82,25 +91,31 @@ function showPage(name){
   if(name==="dashboard")renderDashboard();
 }
 
+function on(id,evt,fn){
+  const el=document.getElementById(id);
+  if(!el){console.warn("Elemento não encontrado:",id);return;}
+  el.addEventListener(evt,fn);
+}
+
 function wireEvents(){
   document.querySelectorAll("#tabs button").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
-  document.getElementById("btnLogin").addEventListener("click",doLogin);
-  document.getElementById("btnLogout").addEventListener("click",doLogout);
-  document.getElementById("monthSelect").addEventListener("change",onMonthChange);
-  document.getElementById("newAthletePhoto").addEventListener("change",onNewPhotoChosen);
-  document.getElementById("changePhotoInput").addEventListener("change",onChangePhotoChosen);
-  wireAdjuster();
-  document.getElementById("btnAddAthlete").addEventListener("click",addAthlete);
-  document.getElementById("scoreSlot").addEventListener("change",renderScorePage);
-  document.getElementById("scoreWeek").addEventListener("change",renderScorePage);
-  document.getElementById("btnFinishSlot").addEventListener("click",finishSlot);
-  document.getElementById("btnGenerateBracket").addEventListener("click",generateBracket);
-  document.getElementById("btnResetBracket").addEventListener("click",resetBracket);
-  document.getElementById("btnCopyStudentLink").addEventListener("click",()=>copyLink("aluno"));
-  document.getElementById("btnExportBackup").addEventListener("click",exportBackup);
-  document.getElementById("btnViewHistory").addEventListener("click",loadHistory);
-  document.getElementById("btnAddSlot").addEventListener("click",addScheduleSlot);
-  document.getElementById("btnSaveRules").addEventListener("click",saveRules);
+  on("btnLogin","click",doLogin);
+  on("btnLogout","click",doLogout);
+  on("monthSelect","change",onMonthChange);
+  on("newAthletePhoto","change",onNewPhotoChosen);
+  on("changePhotoInput","change",onChangePhotoChosen);
+  try{wireAdjuster();}catch(e){console.error("wireAdjuster:",e);}
+  on("btnAddAthlete","click",addAthlete);
+  on("scoreSlot","change",renderScorePage);
+  on("scoreWeek","change",renderScorePage);
+  on("btnFinishSlot","click",finishSlot);
+  on("btnGenerateBracket","click",generateBracket);
+  on("btnResetBracket","click",resetBracket);
+  on("btnCopyStudentLink","click",()=>copyLink("aluno"));
+  on("btnExportBackup","click",exportBackup);
+  on("btnViewHistory","click",loadHistory);
+  on("btnAddSlot","click",addScheduleSlot);
+  on("btnSaveRules","click",saveRules);
 }
 
 function buildMonthSelect(){
@@ -595,9 +610,10 @@ function loadImage(src){return new Promise((res,rej)=>{const i=new Image();i.onl
 async function generateStoryImage(kind){
   try{
     setSync("Gerando imagem...");
-    if(kind==="matamata"){await generateBracketImage();return;}
     if(kind==="anual"&&(!annualScores||!annualScores.length)){await loadAnnualScores();}
-    await drawRankingStory(kind);
+    const url = (kind==="matamata") ? await generateBracketImage() : await drawRankingStory(kind);
+    if(!url)throw new Error("imagem vazia");
+    finishStory(kind,url);
   }catch(err){
     console.error(err);
     setSync("Erro ao gerar imagem: "+(err&&err.message?err.message:err),"error");
@@ -606,7 +622,8 @@ async function generateStoryImage(kind){
 }
 
 async function drawRankingStory(kind){
-  const c=document.getElementById("storyCanvas"),ctx=c.getContext("2d"),W=c.width,H=c.height;
+  const c=document.createElement("canvas");c.width=1080;c.height=1920;
+  const ctx=c.getContext("2d"),W=c.width,H=c.height;
 
   // fundo escuro com brilho (igual ao link)
   ctx.fillStyle="#02060f";ctx.fillRect(0,0,W,H);
@@ -656,7 +673,7 @@ async function drawRankingStory(kind){
   if(!rows.length){
     ctx.fillStyle="#dbeafe";ctx.font="700 34px Arial";
     ctx.fillText("Sem pontuação lançada ainda.",W/2,panelTop+220);
-    finishStory(kind);return;
+    return c.toDataURL("image/png");
   }
 
   // calcula altura de cada linha para caber TODOS os atletas
@@ -707,15 +724,10 @@ async function drawRankingStory(kind){
     ctx.fillText(r.pts+" pts",W-96,cy+fontSize*0.35);
   }
   ctx.textAlign="center";
-  finishStory(kind);
+  return c.toDataURL("image/png");
 }
 
-function finishStory(kind){
-  const c=document.getElementById("storyCanvas");
-  if(!c){setSync("Erro: área da imagem não encontrada.","error");return;}
-  let url;
-  try{url=c.toDataURL("image/png");}
-  catch(e){setSync("Erro ao exportar a imagem: "+e.message,"error");alert("Erro ao exportar a imagem: "+e.message);return;}
+function finishStory(kind,url){
   const card=document.getElementById("storyPreviewCard");
   if(card)card.style.display="block";
   const prev=document.getElementById("storyPreviewImg");
@@ -760,7 +772,8 @@ function drawTbdCard(ctx,x,y,w,h,label){
 function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
 
 async function generateBracketImage(){
-  const c=document.getElementById("storyCanvas"),ctx=c.getContext("2d"),W=c.width,H=c.height; // 1080x1920
+  const c=document.createElement("canvas");c.width=1080;c.height=1920;
+  const ctx=c.getContext("2d"),W=c.width,H=c.height;
   // fundo escuro com brilho
   ctx.fillStyle="#02060f";ctx.fillRect(0,0,W,H);
   const glow=ctx.createRadialGradient(W/2,120,50,W/2,120,700);
@@ -792,7 +805,7 @@ async function generateBracketImage(){
 
   if(!q.length){
     ctx.fillStyle="#dbeafe";ctx.font="800 34px Arial";ctx.fillText("Gere o chaveamento primeiro (aba Mata-mata).",W/2,700);
-    finishStory("matamata");return;
+    return c.toDataURL("image/png");
   }
 
   // QUARTAS — 4 confrontos, 2 colunas x 2 linhas
@@ -858,7 +871,7 @@ async function generateBracketImage(){
   ctx.fillStyle="#8ff0b3";ctx.font="800 22px Arial";ctx.textAlign="center";
   ctx.fillText(`${FULL_MONTH_NAMES[currentMonth-1]}/${currentYear}`,W/2,H-40);
 
-  finishStory("matamata");
+  return c.toDataURL("image/png");
 }
 
 function drawTrophy(ctx,cx,cy,scale){
@@ -883,15 +896,39 @@ function drawTrophy(ctx,cx,cy,scale){
 function renderReadonly(){
   document.getElementById("readonlyRules").textContent=rulesTextValue||"Regras ainda não definidas.";
   document.getElementById("readonlyRanking").innerHTML=rankList(computeRanking(scores));
+
+  // botão de salvar a classificação como imagem
+  const rankArea=document.getElementById("readonlyRanking");
+  const btn=document.createElement("button");
+  btn.className="success saveImgBtn";
+  btn.textContent="Salvar classificação como imagem";
+  btn.onclick=async()=>{
+    btn.textContent="Gerando...";
+    try{
+      const url=await drawRankingStory("ranking");
+      showSaveBox(rankArea,url,"Classificação");
+      btn.remove();
+    }catch(err){btn.textContent="Erro: "+(err.message||err);}
+  };
+  rankArea.parentNode.appendChild(btn);
+
   const area=document.getElementById("readonlyBracket");
   if(!bracket.length){area.innerHTML="<p class='smallText'>Mata-mata ainda não gerado neste mês.</p>";return;}
-  // gera a imagem do chaveamento e exibe
-  area.innerHTML='<canvas id="storyCanvas" width="1080" height="1920" style="display:none"></canvas><img id="roBracketImg" class="roBracketImg" alt="Chaveamento">';
-  generateBracketImage().then(()=>{
-    const c=document.getElementById("storyCanvas");
-    document.getElementById("roBracketImg").src=c.toDataURL("image/png");
+  area.innerHTML="<p class='smallText' style='text-align:center'>Carregando chaveamento...</p>";
+  generateBracketImage().then(url=>{
+    area.innerHTML="";
+    showSaveBox(area,url,"Chaveamento");
   }).catch(err=>{
     console.error(err);
     area.innerHTML="<p class='smallText'>Não foi possível carregar o chaveamento.</p>";
   });
+}
+
+function showSaveBox(container,url,label){
+  const box=document.createElement("div");
+  box.innerHTML=`
+    <img class="roBracketImg" src="${url}" alt="${label}">
+    <a class="success storyDownloadBtn" href="${url}" download="primo-${label.toLowerCase()}-${currentYear}-${currentMonth}.png">Baixar ${label}</a>
+    <p class="smallText" style="text-align:center;margin-top:6px">No iPhone: toque e segure na imagem e escolha "Salvar em Fotos".</p>`;
+  container.appendChild(box);
 }
