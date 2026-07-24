@@ -15,6 +15,7 @@ let currentPage = "dashboard";
 let currentYear, currentMonth;
 let saveTimers = {};
 
+const APP_VERSION = "v21 (fotos na tabela semanal)";
 const MONTH_NAMES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const FULL_MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
@@ -87,7 +88,7 @@ function showPage(name){
   if(name==="matamata")renderBracket();
   if(name==="cadastro")renderAthletesTable();
   if(name==="imprimir")document.getElementById("storyPreviewCard").style.display="none";
-  if(name==="config"){renderSlotsList();document.getElementById("rulesText").value=rulesTextValue;}
+  if(name==="config"){renderSlotsList();document.getElementById("rulesText").value=rulesTextValue;const v=document.getElementById("appVersion");if(v)v.textContent="Versão do app: "+APP_VERSION;}
   if(name==="dashboard")renderDashboard();
 }
 
@@ -1085,20 +1086,101 @@ async function generateBracketImage(){
 function drawTrophy(ctx,cx,cy,scale){
   ctx.save();
   if(scale){ctx.translate(cx,cy);ctx.scale(scale,scale);ctx.translate(-cx,-cy);}
-  const g=ctx.createLinearGradient(cx-50,cy-70,cx+50,cy+50);
-  g.addColorStop(0,"#fff0bf");g.addColorStop(.35,"#f0c451");
-  g.addColorStop(.6,"#c8951f");g.addColorStop(1,"#ffe9a8");
-  ctx.fillStyle=g;ctx.strokeStyle="#8f6b12";ctx.lineWidth=2.5;
-  ctx.beginPath();ctx.moveTo(cx-42,cy-64);ctx.lineTo(cx+42,cy-64);
-  ctx.lineTo(cx+29,cy-8);ctx.quadraticCurveTo(cx,cy+22,cx-29,cy-8);ctx.closePath();
-  ctx.fill();ctx.stroke();
-  ctx.beginPath();ctx.arc(cx-50,cy-50,19,Math.PI*0.42,Math.PI*1.6,false);ctx.stroke();
-  ctx.beginPath();ctx.arc(cx+50,cy-50,19,Math.PI*1.42,Math.PI*0.58,true);ctx.stroke();
-  ctx.fillRect(cx-6,cy-8,12,32);
-  ctx.fillRect(cx-28,cy+24,56,13);
-  ctx.fillRect(cx-38,cy+37,76,12);
-  ctx.strokeRect(cx-28,cy+24,56,13);
-  ctx.strokeRect(cx-38,cy+37,76,12);
+
+  const gold=(x0,y0,x1,y1)=>{
+    const g=ctx.createLinearGradient(x0,y0,x1,y1);
+    g.addColorStop(0,"#8a6410");
+    g.addColorStop(.18,"#d9a82c");
+    g.addColorStop(.38,"#ffeeb0");
+    g.addColorStop(.52,"#f0c64e");
+    g.addColorStop(.72,"#b98718");
+    g.addColorStop(.88,"#f4d878");
+    g.addColorStop(1,"#8a6410");
+    return g;
+  };
+  const edge="#6d4d0a";
+
+  // ----- alcas -----
+  ctx.strokeStyle=gold(cx-70,cy-70,cx+70,cy-20);
+  ctx.lineWidth=9;ctx.lineCap="round";
+  ctx.beginPath();
+  ctx.moveTo(cx-37,cy-62);
+  ctx.bezierCurveTo(cx-82,cy-64,cx-84,cy-14,cx-34,cy-14);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx+37,cy-62);
+  ctx.bezierCurveTo(cx+82,cy-64,cx+84,cy-14,cx+34,cy-14);
+  ctx.stroke();
+  ctx.strokeStyle="rgba(255,244,200,.55)";ctx.lineWidth=2.5;
+  ctx.beginPath();
+  ctx.moveTo(cx-39,cy-60);
+  ctx.bezierCurveTo(cx-76,cy-60,cx-78,cy-20,cx-38,cy-19);
+  ctx.stroke();
+  ctx.lineCap="butt";
+
+  // ----- taca (corpo) -----
+  ctx.beginPath();
+  ctx.moveTo(cx-40,cy-68);
+  ctx.lineTo(cx+40,cy-68);
+  ctx.bezierCurveTo(cx+40,cy-16,cx+27,cy+10,cx,cy+22);
+  ctx.bezierCurveTo(cx-27,cy+10,cx-40,cy-16,cx-40,cy-68);
+  ctx.closePath();
+  ctx.fillStyle=gold(cx-40,cy-68,cx+40,cy+22);
+  ctx.fill();
+  ctx.strokeStyle=edge;ctx.lineWidth=1.8;ctx.stroke();
+
+  // brilho lateral na taca
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(cx-40,cy-68);ctx.lineTo(cx+40,cy-68);
+  ctx.bezierCurveTo(cx+40,cy-16,cx+27,cy+10,cx,cy+22);
+  ctx.bezierCurveTo(cx-27,cy+10,cx-40,cy-16,cx-40,cy-68);
+  ctx.closePath();ctx.clip();
+  const shine=ctx.createLinearGradient(cx-26,cy-68,cx-6,cy+10);
+  shine.addColorStop(0,"rgba(255,255,255,.75)");
+  shine.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=shine;
+  ctx.fillRect(cx-30,cy-68,16,96);
+  ctx.restore();
+
+  // ----- borda superior (aro) -----
+  ctx.beginPath();
+  ctx.ellipse(cx,cy-68,42,9,0,0,Math.PI*2);
+  ctx.fillStyle=gold(cx-42,cy-77,cx+42,cy-59);
+  ctx.fill();ctx.strokeStyle=edge;ctx.lineWidth=1.6;ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(cx,cy-68,32,5.5,0,0,Math.PI*2);
+  ctx.fillStyle="rgba(90,62,8,.85)";ctx.fill();
+
+  // ----- no / conexao -----
+  ctx.beginPath();
+  ctx.ellipse(cx,cy+26,11,7,0,0,Math.PI*2);
+  ctx.fillStyle=gold(cx-11,cy+19,cx+11,cy+33);ctx.fill();
+  ctx.strokeStyle=edge;ctx.lineWidth=1.4;ctx.stroke();
+
+  // ----- haste -----
+  ctx.beginPath();
+  ctx.moveTo(cx-7,cy+30);ctx.lineTo(cx+7,cy+30);
+  ctx.lineTo(cx+9,cy+52);ctx.lineTo(cx-9,cy+52);ctx.closePath();
+  ctx.fillStyle=gold(cx-9,cy+30,cx+9,cy+52);ctx.fill();
+  ctx.strokeStyle=edge;ctx.lineWidth=1.4;ctx.stroke();
+
+  // ----- base superior -----
+  ctx.beginPath();
+  ctx.moveTo(cx-26,cy+52);ctx.lineTo(cx+26,cy+52);
+  ctx.lineTo(cx+30,cy+66);ctx.lineTo(cx-30,cy+66);ctx.closePath();
+  ctx.fillStyle=gold(cx-30,cy+52,cx+30,cy+66);ctx.fill();
+  ctx.strokeStyle=edge;ctx.lineWidth=1.4;ctx.stroke();
+
+  // ----- base inferior -----
+  ctx.beginPath();
+  roundRect(ctx,cx-42,cy+66,84,15,4);
+  ctx.fillStyle=gold(cx-42,cy+66,cx+42,cy+81);ctx.fill();
+  ctx.strokeStyle=edge;ctx.lineWidth=1.4;ctx.stroke();
+  // faixa clara na base
+  ctx.fillStyle="rgba(255,240,190,.35)";
+  ctx.fillRect(cx-40,cy+68,80,3);
+
   ctx.restore();
 }
 // ---------------- READONLY ----------------
@@ -1239,12 +1321,26 @@ async function drawWeeklyStory(){
     ctx.lineWidth=m?2:1.1;
     roundRect(ctx,tblX,y,tblW,barH,8);ctx.stroke();
     const cy=y+barH/2+fs*0.35;
-    // posicao + nome
+    const mid=y+barH/2;
+    // posicao
     ctx.textAlign="left";ctx.fillStyle=m?m:"#e8f1ff";
     ctx.font=`700 ${fs}px Arial`;
     ctx.fillText((i+1)+"º",colX[0]+10,cy);
-    ctx.fillStyle="#ffffff";
-    ctx.fillText(r.name.toUpperCase(),colX[0]+56,cy,nameW-66);
+    // foto
+    const pr=Math.max(11,Math.min(22,Math.round(barH*0.46)));
+    const pcx=colX[0]+56+pr;
+    const photo=athletePhoto(r.id);
+    ctx.save();ctx.beginPath();ctx.arc(pcx,mid,pr,0,Math.PI*2);ctx.closePath();ctx.clip();
+    if(photo){try{const img=await loadImage(photo);ctx.drawImage(img,pcx-pr,mid-pr,pr*2,pr*2);}catch(e){ctx.fillStyle="#08172e";ctx.fillRect(pcx-pr,mid-pr,pr*2,pr*2);}}
+    else{ctx.fillStyle="#08172e";ctx.fillRect(pcx-pr,mid-pr,pr*2,pr*2);}
+    ctx.restore();
+    ctx.beginPath();ctx.arc(pcx,mid,pr,0,Math.PI*2);
+    ctx.lineWidth=1.8;ctx.strokeStyle=m?m:"#4d9bff";ctx.stroke();
+    // nome
+    ctx.textAlign="left";ctx.fillStyle="#ffffff";
+    ctx.font=`700 ${fs}px Arial`;
+    const nmX=pcx+pr+12;
+    ctx.fillText(r.name.toUpperCase(),nmX,cy,nameW-(nmX-colX[0])-10);
     // semanas
     ctx.textAlign="center";
     for(let k=0;k<5;k++){
