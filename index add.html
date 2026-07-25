@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Primo Soccer League 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="app" id="app">
+
+  <header class="hero" id="hero">
+    <img id="heroLogo" class="heroLogo" alt="Logo">
+    <div class="heroTitle" id="heroTitle">PRIMO SOCCER LEAGUE 2026</div>
+    <div class="heroSub" id="heroSub">MÊS: JULHO</div>
+    <select id="monthSelect" class="monthSelect"></select>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-page="dashboard">Início</button>
+    <button data-page="cadastro">Cadastro</button>
+    <button data-page="agenda">Agenda</button>
+    <button data-page="pontuacao">Pontuação</button>
+    <button data-page="ranking">Ranking</button>
+    <button data-page="matamata">Mata-mata</button>
+    <button data-page="imprimir">Imprimir</button>
+    <button data-page="config">Config</button>
+  </nav>
+
+  <div id="syncStatus" class="sync"></div>
+
+  <!-- LOGIN -->
+  <section id="page-login" class="page">
+    <div class="card loginCard">
+      <h2>Entrar no painel</h2>
+      <p>Acesso restrito ao administrador. Os atletas usam o link somente leitura.</p>
+      <div class="form form1">
+        <input id="loginEmail" type="email" placeholder="E-mail do administrador" autocomplete="username">
+        <input id="loginPass" type="password" placeholder="Senha" autocomplete="current-password">
+        <button class="success" id="btnLogin">Entrar</button>
+      </div>
+      <p id="loginError" class="errorText"></p>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="page-dashboard" class="page hidden">
+    <div class="card">
+      <h2>Visão geral</h2>
+      <p>Cadastre atletas, monte os horários, lance a pontuação (P/D, P/E e Uniforme) e gere o mata-mata.</p>
+    </div>
+    <div class="grid3">
+      <div class="card mini"><h3>Ativos no mês</h3><strong id="dashActive">0</strong></div>
+      <div class="card mini"><h3>Cadastrados</h3><strong id="dashTotal">0</strong></div>
+      <div class="card mini"><h3>Pontos do mês</h3><strong id="dashPoints">0</strong></div>
+    </div>
+  </section>
+
+  <!-- CADASTRO -->
+  <section id="page-cadastro" class="page hidden">
+    <div class="card">
+      <h2>Cadastro de atleta</h2>
+      <div class="form form1">
+        <input id="newAthleteName" placeholder="Nome completo">
+        <label class="photoLabel">
+          <span id="newPhotoPreview" class="avatar">+ foto</span>
+          <input id="newAthletePhoto" type="file" accept="image/*" class="hidden">
+        </label>
+        <button class="success" id="btnAddAthlete">Cadastrar</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Atletas cadastrados</h2>
+      <div class="tableWrap">
+        <table>
+          <thead><tr><th>ID</th><th>Foto</th><th>Nome</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="athletesTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- AGENDA -->
+  <section id="page-agenda" class="page hidden">
+    <div class="card">
+      <h2>Agenda do mês</h2>
+      <p>Os horários e seus atletas são definidos em Config. Aqui você vê quem treina em cada horário neste mês.</p>
+    </div>
+    <div id="agendaGrid" class="gridCards"></div>
+  </section>
+
+  <!-- PONTUAÇÃO -->
+  <section id="page-pontuacao" class="page hidden">
+    <div class="card">
+      <h2>Pontuação semanal</h2>
+      <div class="form form2">
+        <select id="scoreSlot"></select>
+        <select id="scoreWeek">
+          <option value="1">Semana 1</option>
+          <option value="2">Semana 2</option>
+          <option value="3">Semana 3</option>
+          <option value="4">Semana 4</option>
+          <option value="5">Semana 5</option>
+        </select>
+      </div>
+      <p class="smallText">P/D = perna direita, P/E = perna esquerda (use + e −). UN = uniforme (0 / 5 / 7). Tudo é salvo automaticamente.</p>
+    </div>
+    <div class="card">
+      <div class="tableWrap">
+        <table class="scoreTable">
+          <thead><tr><th class="sticky">Atleta</th><th>P/D</th><th>P/E</th><th>UN</th><th>P.Total</th></tr></thead>
+          <tbody id="scoreTableBody"></tbody>
+        </table>
+      </div>
+      <button class="success" id="btnFinishSlot">Finalizar disputa deste horário</button>
+      <p id="slotFinishedNote" class="smallText"></p>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section id="page-ranking" class="page hidden">
+    <div class="card">
+      <h2>Ranking do mês</h2>
+      <div id="monthlyRanking" class="rankList"></div>
+    </div>
+    <div class="card">
+      <h2>Ranking anual</h2>
+      <div class="tableWrap">
+        <table>
+          <thead><tr id="annualHeader"></tr></thead>
+          <tbody id="annualBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- MATA-MATA -->
+  <section id="page-matamata" class="page hidden">
+    <div class="card">
+      <h2>Mata-mata</h2>
+      <p>Gera as quartas com os 8 melhores do ranking até o fim da Semana 2. Confrontos: 1º×8º, 2º×7º, 3º×6º, 4º×5º.</p>
+      <div class="form form2" id="bracketAdminControls">
+        <button class="success" id="btnGenerateBracket">Gerar chaveamento (top 8 até Semana 2)</button>
+        <button class="danger" id="btnResetBracket">Resetar mata-mata</button>
+      </div>
+    </div>
+    <div id="bracketArea" class="bracketArea"></div>
+  </section>
+
+  <!-- IMPRIMIR / STORIES -->
+  <section id="page-imprimir" class="page hidden">
+    <div class="card">
+      <h2>Imagem para Stories (1080x1920)</h2>
+      <p>Gere uma imagem pronta para postar no formato de Stories.</p>
+      <div class="form form2">
+        <button class="success" onclick="generateStoryImage('ranking')">Imagem: Ranking do mês</button>
+        <button class="success" onclick="generateStoryImage('semanal')">Imagem: Pontuação por semana</button>
+        <button class="success" onclick="generateStoryImage('anual')">Imagem: Ranking anual</button>
+        <button class="success" onclick="generateStoryImage('matamata')">Imagem: Mata-mata</button>
+      </div>
+    </div>
+    <div class="card" id="storyPreviewCard" style="display:none">
+      <h2>Prévia</h2>
+      <img id="storyPreviewImg" class="storyCanvas" alt="Prévia">
+      <a id="storyDownload" class="success storyDownloadBtn" download="story.png">Baixar imagem</a>
+      <p class="smallText" style="text-align:center;margin-top:8px">No iPhone: toque e segure na imagem acima e escolha "Salvar em Fotos".</p>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section id="page-config" class="page hidden">
+    <div class="card">
+      <h2>Regras da competição</h2>
+      <p>Este texto aparece para os atletas no link enviado a eles.</p>
+      <textarea id="rulesText" class="rulesBox" rows="6" placeholder="Escreva aqui as regras da competição..."></textarea>
+      <button class="success" id="btnSaveRules">Salvar regras</button>
+    </div>
+
+    <div class="card">
+      <h2>Horários de treino</h2>
+      <p>Crie um horário e já adicione os atletas que treinam nele.</p>
+      <div class="form form1">
+        <input id="newSlotName" placeholder="Nome (ex: Horário 1)">
+        <input id="newSlotDays" placeholder="Dias (ex: Terça e Quinta)">
+        <input id="newSlotTime" placeholder="Horário (ex: 18h às 19h)">
+        <button class="success" id="btnAddSlot">Criar horário</button>
+      </div>
+      <div id="slotsList"></div>
+    </div>
+
+    <div class="card">
+      <h2>Ferramentas</h2>
+      <button class="secondary" id="btnCopyStudentLink">Copiar link dos atletas</button>
+      <button class="secondary" id="btnExportBackup">Exportar backup (JSON)</button>
+      <button class="secondary" id="btnViewHistory">Ver histórico de alterações</button>
+      <button class="danger" id="btnLogout">Sair do painel</button>
+      <p id="linkText" class="smallText"></p>
+      <p class="smallText" id="appVersion" style="opacity:.75"></p>
+      <hr class="softLine">
+      <div id="historyArea"></div>
+    </div>
+  </section>
+
+  <!-- LINK SOMENTE LEITURA (atletas) -->
+  <section id="page-readonly" class="page hidden">
+    <div class="glassWrap">
+      <div class="artHeader">
+        <img id="readonlyLogo" class="artLogo" alt="Logo">
+        <div class="artTitle">PRIMO<br>SOCCER</div>
+        <div class="artSubtitle"><span>—</span> LEAGUE <span>—</span></div>
+        <div class="artYear">2026</div>
+        <div class="artMonthBox" id="readonlySub">MÊS: JULHO</div>
+      </div>
+
+      <div class="glassPanel">
+        <div class="glassSection">
+          <div class="artSectionTitle">CLASSIFICAÇÃO GERAL</div>
+          <div class="artSectionSub">MAIOR PONTUADOR</div>
+          <div id="readonlyRanking" class="rankList"></div>
+        </div>
+      </div>
+
+      <div class="glassPanel">
+        <div class="glassSection">
+          <div class="artSectionTitle">MATA-MATA</div>
+          <div id="readonlyBracket" class="bracketArea"></div>
+        </div>
+      </div>
+
+      <div class="glassPanel">
+        <div class="glassSection">
+          <div class="artSectionTitle">REGRAS DAS COMPETIÇÕES</div>
+          <div id="readonlyRules" class="rulesView"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIGHTBOX FOTO -->
+  <div id="photoLightbox" class="lightbox hidden" onclick="closeLightbox()">
+    <img id="lightboxImg" alt="">
+  </div>
+
+  <!-- AJUSTADOR DE FOTO -->
+  <div id="photoAdjuster" class="adjuster hidden">
+    <div class="adjusterBox">
+      <h3>Ajuste o rosto no círculo</h3>
+      <p class="smallText">Arraste a foto e use o controle de zoom para enquadrar o rosto.</p>
+      <div id="adjustStage" class="adjustStage">
+        <canvas id="adjustCanvas" width="320" height="320"></canvas>
+        <div class="adjustMask"></div>
+      </div>
+      <input id="adjustZoom" type="range" min="1" max="4" step="0.01" value="1" class="zoomRange">
+      <div class="adjusterButtons">
+        <button class="danger" id="adjustCancel">Cancelar</button>
+        <button class="success" id="adjustSave">Usar esta foto</button>
+      </div>
+    </div>
+  </div>
+
+  <input id="changePhotoInput" type="file" accept="image/*" class="hidden">
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
