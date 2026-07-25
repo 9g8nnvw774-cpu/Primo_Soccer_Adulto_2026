@@ -78,7 +78,7 @@ create table if not exists public.athletes_history (
 );
 
 create or replace function public.fn_athletes_history()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
   insert into public.athletes_history(athlete_id, snapshot, action, changed_by)
   values (
@@ -135,3 +135,24 @@ create policy "admin read history" on public.athletes_history for select to auth
 -- com o histórico automático acima, é o que impede a perda total
 -- de dados que aconteceu na versão anterior.
 -- ============================================================
+
+-- ============================================================
+-- 8) HORÁRIOS CONFIGURÁVEIS (com dias da semana)
+-- Antes a Agenda só tinha "Horário 1" e "Horário 2" fixos.
+-- Agora dá para cadastrar quantos horários quiser, cada um com
+-- seus dias da semana e faixa de horário, e isso fica salvo.
+-- ============================================================
+create table if not exists public.schedule_slots (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  days_of_week text,     -- ex: 'Terça e Quinta'
+  time_label text,       -- ex: '18h às 19h'
+  created_at timestamptz not null default now()
+);
+
+alter table public.schedule_slots enable row level security;
+
+drop policy if exists "public read slots" on public.schedule_slots;
+create policy "public read slots" on public.schedule_slots for select to anon, authenticated using (true);
+drop policy if exists "admin write slots" on public.schedule_slots;
+create policy "admin write slots" on public.schedule_slots for all to authenticated using (true) with check (true);
