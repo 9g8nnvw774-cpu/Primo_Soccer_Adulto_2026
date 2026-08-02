@@ -15,7 +15,7 @@ let currentPage = "dashboard";
 let currentYear, currentMonth;
 let saveTimers = {};
 
-const APP_VERSION = "v22 (backup automático)";
+const APP_VERSION = "v23 (link do mês selecionado)";
 const MONTH_NAMES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const FULL_MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
@@ -40,6 +40,12 @@ async function init() {
   const now = new Date();
   currentYear = now.getFullYear();
   currentMonth = now.getMonth() + 1;
+
+  // se o link trouxer mês/ano (link dos atletas), usa esse período
+  const linkY = parseInt(params.get("y"), 10);
+  const linkM = parseInt(params.get("m"), 10);
+  if (linkY >= 2000 && linkY <= 2100) currentYear = linkY;
+  if (linkM >= 1 && linkM <= 12) currentMonth = linkM;
 
   sb = supabase.createClient(window.PRIMO_CONFIG.supabaseUrl, window.PRIMO_CONFIG.supabaseAnonKey);
   document.getElementById("heroLogo").src = window.PRIMO_CONFIG.logo;
@@ -688,7 +694,11 @@ async function saveRules(){
 }
 
 // ---------------- CONFIG TOOLS ----------------
-function copyLink(kind){const url=location.origin+location.pathname+"?"+kind+"=1";navigator.clipboard?.writeText(url);document.getElementById("linkText").textContent="Link copiado: "+url;}
+function copyLink(kind){
+  const url=location.origin+location.pathname+"?"+kind+"=1&y="+currentYear+"&m="+currentMonth;
+  navigator.clipboard?.writeText(url);
+  document.getElementById("linkText").textContent="Link copiado ("+FULL_MONTH_NAMES[currentMonth-1]+"/"+currentYear+"): "+url;
+}
 async function exportBackup(){
   const[{data:a},{data:s},{data:b},{data:sl},{data:sa}]=await Promise.all([
     sb.from("athletes").select("*"),sb.from("scores").select("*"),sb.from("bracket_matches").select("*"),
