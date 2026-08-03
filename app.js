@@ -15,7 +15,7 @@ let currentPage = "dashboard";
 let currentYear, currentMonth;
 let saveTimers = {};
 
-const APP_VERSION = "v23 (link do mês selecionado)";
+const APP_VERSION = "v24 (preview WhatsApp)";
 const MONTH_NAMES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 const FULL_MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
@@ -41,7 +41,6 @@ async function init() {
   currentYear = now.getFullYear();
   currentMonth = now.getMonth() + 1;
 
-  // se o link trouxer mês/ano (link dos atletas), usa esse período
   const linkY = parseInt(params.get("y"), 10);
   const linkM = parseInt(params.get("m"), 10);
   if (linkY >= 2000 && linkY <= 2100) currentYear = linkY;
@@ -120,8 +119,8 @@ function wireEvents(){
   on("btnResetBracket","click",resetBracket);
   on("btnCopyStudentLink","click",()=>copyLink("aluno"));
   on("btnExportBackup","click",exportBackup);
-  on("btnViewHistory","click",loadHistory);
   on("btnBackupNow","click",manualBackupNow);
+  on("btnViewHistory","click",loadHistory);
   on("btnAddSlot","click",addScheduleSlot);
   on("btnSaveRules","click",saveRules);
 }
@@ -155,7 +154,7 @@ async function enterAdmin(){
   setSync("Carregando dados...");
   await Promise.all([loadAthletes(),loadScores(),loadBracket(),loadScheduleSlots(),loadSlotAthletes(),loadRules()]);
   setSync("Conectado.","ok");showPage("dashboard");
-  autoBackup(); // backup automático diário em segundo plano
+  autoBackup();
 }
 
 // ---------------- BACKUP AUTOMÁTICO ----------------
@@ -176,35 +175,25 @@ async function buildSnapshot(){
     competition_settings:cs.data||[]
   };
 }
-
 async function autoBackup(){
   try{
     const today=new Date().toISOString().slice(0,10);
-    // já existe backup automático de hoje?
     const {data:existing}=await sb.from("backups").select("id").eq("label","auto-"+today).limit(1);
     if(existing&&existing.length)return;
     const snap=await buildSnapshot();
     await sb.from("backups").insert({label:"auto-"+today,data:snap});
-    // mantém só os últimos 30 backups automáticos
     const {data:all}=await sb.from("backups").select("id,created_at").like("label","auto-%").order("created_at",{ascending:false});
-    if(all&&all.length>30){
-      const oldIds=all.slice(30).map(x=>x.id);
-      await sb.from("backups").delete().in("id",oldIds);
-    }
-    console.log("Backup automático criado:",today);
+    if(all&&all.length>30){await sb.from("backups").delete().in("id",all.slice(30).map(x=>x.id));}
   }catch(err){console.warn("Backup automático falhou:",err);}
 }
-
 async function manualBackupNow(){
   setSync("Criando backup...");
   try{
     const snap=await buildSnapshot();
     await sb.from("backups").insert({label:"manual-"+new Date().toISOString().slice(0,19),data:snap});
-    setSync("Backup criado com sucesso.","ok");
-    loadBackupsList();
+    setSync("Backup criado com sucesso.","ok");loadBackupsList();
   }catch(err){setSync("Erro no backup: "+err.message,"error");}
 }
-
 async function loadBackupsList(){
   const area=document.getElementById("backupsArea");
   if(!area)return;
@@ -215,33 +204,25 @@ async function loadBackupsList(){
   area.innerHTML="<h3>Backups salvos</h3>"+data.map(bk=>{
     const dt=new Date(bk.created_at).toLocaleString("pt-BR");
     const tipo=bk.label&&bk.label.startsWith("auto")?"Automático":"Manual";
-    return `<div class="item">
-      <span class="rankLeft">${tipo} — ${dt}</span>
-      <button class="secondary" onclick="restoreBackup('${bk.id}')">Restaurar</button>
-    </div>`;
+    return `<div class="item"><span class="rankLeft">${tipo} — ${dt}</span><button class="secondary" onclick="restoreBackup('${bk.id}')">Restaurar</button></div>`;
   }).join("");
 }
-
 async function restoreBackup(id){
-  if(!confirm("RESTAURAR este backup?\n\nIsso vai substituir os dados atuais (atletas, pontos, agenda, mata-mata) pelos dados salvos nesse backup. Um backup do estado atual será criado antes, por segurança."))return;
+  if(!confirm("RESTAURAR este backup?\n\nIsso vai substituir os dados atuais pelos dados salvos nesse backup. Um backup do estado atual será criado antes, por segurança."))return;
   setSync("Restaurando... não feche o app.");
   try{
-    // segurança: salva o estado atual antes de restaurar
     const cur=await buildSnapshot();
     await sb.from("backups").insert({label:"antes-restauro-"+new Date().toISOString().slice(0,19),data:cur});
-
     const {data:bk,error}=await sb.from("backups").select("data").eq("id",id).single();
     if(error||!bk)throw new Error("backup não encontrado");
     const d=bk.data;
-
-    // apaga na ordem correta (dependências) e reinsere
-    await sb.from("slot_athletes").delete().neq("id","00000000-0000-0000-0000-000000000000");
-    await sb.from("bracket_matches").delete().neq("id","00000000-0000-0000-0000-000000000000");
-    await sb.from("scores").delete().neq("id","00000000-0000-0000-0000-000000000000");
-    await sb.from("monthly_enrollment").delete().neq("id","00000000-0000-0000-0000-000000000000");
-    await sb.from("schedule_slots").delete().neq("id","00000000-0000-0000-0000-000000000000");
-    await sb.from("athletes").delete().neq("id","00000000-0000-0000-0000-000000000000");
-
+    const nil="00000000-0000-0000-0000-000000000000";
+    await sb.from("slot_athletes").delete().neq("id",nil);
+    await sb.from("bracket_matches").delete().neq("id",nil);
+    await sb.from("scores").delete().neq("id",nil);
+    await sb.from("monthly_enrollment").delete().neq("id",nil);
+    await sb.from("schedule_slots").delete().neq("id",nil);
+    await sb.from("athletes").delete().neq("id",nil);
     if(d.athletes&&d.athletes.length)await sb.from("athletes").insert(d.athletes);
     if(d.schedule_slots&&d.schedule_slots.length)await sb.from("schedule_slots").insert(d.schedule_slots);
     if(d.monthly_enrollment&&d.monthly_enrollment.length)await sb.from("monthly_enrollment").insert(d.monthly_enrollment);
@@ -249,7 +230,6 @@ async function restoreBackup(id){
     if(d.bracket_matches&&d.bracket_matches.length)await sb.from("bracket_matches").insert(d.bracket_matches);
     if(d.slot_athletes&&d.slot_athletes.length)await sb.from("slot_athletes").insert(d.slot_athletes);
     if(d.competition_settings&&d.competition_settings.length)await sb.from("competition_settings").upsert(d.competition_settings);
-
     setSync("Backup restaurado com sucesso.","ok");
     await Promise.all([loadAthletes(),loadScores(),loadBracket(),loadScheduleSlots(),loadSlotAthletes(),loadRules()]);
     showPage("dashboard");
